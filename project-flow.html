@@ -1,0 +1,1954 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Project Flow</title>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0d1117;--sf:#161b22;--sf2:#1c2128;
+  --bd:#30363d;--dim:#21262d;
+  --tx:#e6edf3;--mu:#8b949e;--su:#484f58;
+  --green:#3fb950;--red:#f85149;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  background:var(--bg);color:var(--tx);height:100vh;
+  display:flex;flex-direction:column;overflow:hidden;
+  -webkit-user-select:none;user-select:none}
+
+/* ── Header ── */
+.hdr{display:flex;align-items:center;justify-content:space-between;
+  padding:10px 20px;border-bottom:1px solid var(--dim);
+  background:rgba(13,17,23,.96);backdrop-filter:blur(14px);z-index:400;flex-shrink:0}
+.hdr-l{display:flex;align-items:center;gap:9px}
+.hdr-logo{font-size:15px;font-weight:800;letter-spacing:-.02em;
+  background:linear-gradient(125deg,#58a6ff 30%,#bc8cff);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.hdr-r{display:flex;gap:7px;align-items:center}
+.pct{font-size:11px;color:var(--su);min-width:34px;text-align:right}
+.btn{border:none;border-radius:7px;padding:5px 13px;font-size:12px;font-weight:500;
+  cursor:pointer;transition:filter .12s,transform .08s}
+.btn:active{transform:scale(.96)}
+.btn:hover{filter:brightness(1.13)}
+.btn:disabled{opacity:.38;cursor:not-allowed;filter:none;transform:none}
+.btn-ghost{background:transparent;color:var(--mu);border:1px solid var(--bd)}
+.btn-green{background:#238636;color:#fff;border:1px solid #2ea043}
+.btn-active{background:var(--sf2)!important;color:#58a6ff!important;border-color:#388bfd!important}
+.undo-btn{padding:5px 10px;font-size:13px}
+
+/* ── Layout ── */
+.layout{display:flex;flex:1;overflow:hidden}
+
+/* ── Sidebar ── */
+.sb{width:236px;background:var(--bg);border-right:1px solid var(--dim);
+  display:flex;flex-direction:column;overflow:hidden;flex-shrink:0}
+.sb-head{padding:14px 10px 10px;border-bottom:1px solid var(--dim);flex-shrink:0}
+.sb-lbl{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;
+  color:var(--su);padding:0 6px;margin-bottom:9px}
+.pi{display:flex;align-items:center;gap:8px;padding:6px 10px 6px 8px;
+  border-radius:8px;cursor:pointer;
+  transition:background .12s,border-left-color .2s,transform .15s,box-shadow .2s;
+  user-select:none;margin-bottom:2px;border-left:3px solid transparent;position:relative}
+.pi:hover{background:var(--sf);transform:translateX(2px)}
+.pi.sel{background:var(--sf2);border-left-color:var(--pi-c,#388bfd);
+  transform:translateX(4px);box-shadow:inset 0 0 0 1px rgba(255,255,255,.04)}
+.pi .pdot{width:9px;height:9px;border-radius:50%;flex-shrink:0;transition:box-shadow .3s}
+.pi.sel .pdot{box-shadow:0 0 8px var(--pi-c,#388bfd)}
+.pname{font-size:12.5px;color:var(--mu);flex:1;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap;transition:color .15s}
+.pi.sel .pname{color:var(--tx)}
+.pcnt{font-size:10px;color:var(--su);background:var(--dim);
+  border-radius:10px;padding:1px 7px;transition:all .3s}
+.pcnt.all-done{background:#052e16;color:var(--green)}
+.sb-add{display:flex;align-items:center;gap:7px;padding:6px 10px;border-radius:8px;
+  cursor:pointer;background:none;border:none;color:var(--su);font-size:12px;
+  width:100%;margin-top:5px;transition:color .1s,background .1s;text-align:left}
+.sb-add:hover{color:var(--mu);background:var(--sf)}
+.tl-wrap{flex:1;overflow-y:auto;padding:10px 10px 20px}
+.tl-lbl{font-size:9.5px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.1em;color:var(--su);padding:6px 6px 10px}
+.ti{display:flex;gap:9px;margin-bottom:13px;position:relative;animation:tiFade .35s ease}
+@keyframes tiFade{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+.ti:not(:last-child)::before{content:'';position:absolute;left:3px;top:12px;
+  width:1px;bottom:-13px;background:var(--dim)}
+.tidot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:4px;
+  position:relative;z-index:1;transition:box-shadow .3s}
+.tic{flex:1;min-width:0}
+.tit{font-size:11.5px;color:var(--mu);font-weight:500;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap}
+.tim{font-size:10px;color:var(--su);margin-top:2px}
+
+/* ── Time ruler ── */
+.time-ruler{
+  height:52px;flex-shrink:0;position:relative;
+  background:rgba(13,17,23,.97);border-bottom:1px solid var(--dim);
+  overflow:hidden;backdrop-filter:blur(12px);}
+.tr-col{
+  position:absolute;top:0;bottom:0;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
+  border-right:1px solid rgba(255,255,255,.04);
+  transition:background .2s;}
+.tr-col.past{opacity:.5}
+.tr-col.today{background:rgba(56,139,253,.1);border-right:1px solid rgba(56,139,253,.18)}
+.tr-today-badge{
+  position:absolute;top:3px;
+  background:#388bfd;color:#fff;font-size:9px;font-weight:700;
+  padding:1px 6px;border-radius:10px;letter-spacing:.04em}
+.tr-date{font-size:13.5px;font-weight:700;color:var(--tx)}
+.tr-col.today .tr-date{color:#58a6ff}
+.tr-col.past .tr-date{color:var(--mu)}
+.tr-week{font-size:10px;color:var(--su)}
+.tr-col.today .tr-week{color:#388bfd80}
+
+/* ── Today column in canvas ── */
+.today-col-bg{
+  position:absolute;
+  background:rgba(56,139,253,.03);
+  border-left:1px solid rgba(56,139,253,.1);
+  border-right:1px solid rgba(56,139,253,.1);
+  pointer-events:none;z-index:0;}
+
+/* ── Canvas ── */
+.cv-area{flex:1;display:flex;flex-direction:column;overflow:hidden;position:relative}
+.cv-wrap{flex:1;position:relative;overflow:hidden;
+  background-color:var(--bg);
+  background-image:radial-gradient(circle,#1c2230 1px,transparent 1px);
+  background-size:28px 28px}
+.cv-wrap.pan-mode{cursor:grabbing!important}
+.cv-wrap.drag-node{cursor:grabbing!important}
+.cv{position:absolute;top:0;left:0;transform-origin:0 0;will-change:transform}
+
+/* ── Node card ── */
+.nc{
+  position:absolute;width:232px;
+  background:linear-gradient(145deg,
+  color-mix(in srgb,var(--nc-dot,#60a5fa) 22%,#050b14),
+  color-mix(in srgb,var(--nc-dot,#60a5fa) 10%,#020608));
+  border:1.5px solid var(--nc-bd,#30363d);
+  border-radius:14px;padding:14px 14px 11px;
+  cursor:grab;overflow:visible;
+  animation:ncSpring .34s cubic-bezier(.22,.68,0,1.28);
+  transition:border-color .35s,background .35s,box-shadow .35s,transform .18s,opacity .3s;
+  will-change:transform;}
+@keyframes ncSpring{
+  0%  {opacity:0;transform:scale(.72) translateY(10px)}
+  60% {opacity:1;transform:scale(1.04) translateY(-3px)}
+  80% {transform:scale(.98) translateY(1px)}
+  100%{opacity:1;transform:scale(1) translateY(0)}}
+.nc:hover:not(.is-drag){
+  box-shadow:0 6px 28px rgba(0,0,0,.55),0 0 0 1px color-mix(in srgb,var(--nc-bd,#30363d) 80%,transparent);
+  transform:translateY(-2px)}
+.nc.is-drag{
+  transform:scale(1.07)!important;
+  box-shadow:0 28px 70px rgba(0,0,0,.75),0 0 0 3px var(--nc-bd,#30363d)!important;
+  cursor:grabbing!important;z-index:999;opacity:.93}
+.nc.is-sel{
+  box-shadow:0 0 0 2px #58a6ff,0 0 18px rgba(88,166,255,.25)!important;
+  z-index:100}
+.nc.s-done{
+  --nc-bd:#166534!important;--nc-dot:#4ade80!important;
+  box-shadow:0 0 0 3px #16653420;
+  background:linear-gradient(145deg,#0a2318,#061a10)!important;}
+.nc:has(.cp-panel),.nc:has(.dd){z-index:200!important}
+.cv-wrap.arranging .nc{transition:left .48s cubic-bezier(.22,.68,0,1.2),top .48s cubic-bezier(.22,.68,0,1.2),border-color .35s,background .35s,box-shadow .35s,transform .18s,opacity .3s}
+.nc:not(.s-done){box-shadow:0 0 0 3px var(--nc-glow,transparent)}
+.nc-top{display:flex;align-items:center;gap:8px;margin-bottom:10px;padding-right:18px}
+.ndot{width:8px;height:8px;border-radius:50%;flex-shrink:0;
+  background:var(--nc-dot,#60a5fa);transition:background .35s,box-shadow .35s}
+.nc:not(.s-done) .ndot{animation:ndPulse 2.8s ease-in-out infinite}
+.nc.s-done .ndot{animation:none;box-shadow:0 0 10px var(--nc-dot,#4ade80)}
+@keyframes ndPulse{
+  0%,100%{box-shadow:0 0 0 0 transparent}
+  50%{box-shadow:0 0 0 5px var(--nc-glow,rgba(96,165,250,.2))}}
+.ntitle{flex:1;font-size:13px;font-weight:500;color:#c9d1d9;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  -webkit-user-select:none;user-select:none;cursor:text;transition:color .35s}
+.nc.s-done .ntitle{color:var(--nc-dot,#4ade80)}
+.nti{flex:1;background:none;border:none;border-bottom:1.5px solid var(--nc-dot,#388bfd);
+  color:var(--tx);font-size:13px;font-weight:500;outline:none;padding-bottom:1px;
+  min-width:0;-webkit-user-select:text;user-select:text}
+.nc-bot{display:flex;align-items:center;justify-content:space-between;gap:6px}
+.ndate{font-size:10px;color:var(--su);flex:1;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap}
+.ndeadline{
+  font-size:9.5px;display:inline-flex;align-items:center;gap:3px;
+  padding:1px 6px;border-radius:10px;cursor:pointer;
+  transition:filter .12s;}
+.ndeadline:hover{filter:brightness(1.2)}
+.ndeadline.ok{background:#0a2318;color:#4ade80}
+.ndeadline.today-dl{background:#0e2456;color:#60a5fa}
+.ndeadline.overdue{background:#2d0f0f;color:#f85149}
+.ndeadline.soon{background:#2e1c04;color:#fbbf24}
+.ndeadline.neutral{background:var(--dim);color:var(--su)}
+.ndeadline-input{
+  font-size:10px;background:var(--bg);border:1px solid #388bfd;
+  border-radius:5px;color:var(--tx);outline:none;padding:1px 4px;
+  -webkit-user-select:text;user-select:text;cursor:text;width:108px}
+.nac{display:flex;gap:3px;align-items:center;flex-shrink:0}
+.ib{width:22px;height:22px;border-radius:5px;border:none;background:none;
+  color:var(--su);font-size:12px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:background .1s,color .1s}
+.ib:hover{background:var(--bd);color:var(--mu)}
+.ib.del:hover{color:var(--red)}
+.arb{display:flex;align-items:center;justify-content:center;
+  width:26px;height:26px;border-radius:6px;border:1px solid var(--bd);
+  background:var(--bg);color:var(--su);font-size:10px;cursor:pointer;
+  position:relative;transition:border-color .12s,color .12s,background .12s}
+.arb:hover,.arb.open{border-color:var(--nc-dot,#388bfd);color:var(--nc-dot,#388bfd)}
+
+/* Color picker */
+.cp-wrap{position:absolute;top:9px;right:9px;z-index:20}
+.cp-ring{width:13px;height:13px;border-radius:50%;
+  background:var(--nc-dot,#60a5fa);cursor:pointer;
+  border:2px solid rgba(255,255,255,.18);
+  transition:transform .15s,box-shadow .15s}
+.cp-ring:hover{transform:scale(1.3);box-shadow:0 0 10px var(--nc-dot,#388bfd)}
+.cp-panel{
+  position:absolute;right:-3px;top:20px;
+  background:#1c2128;border:1px solid var(--bd);
+  border-radius:11px;padding:9px;
+  display:grid;grid-template-columns:repeat(4,1fr);gap:7px;
+  z-index:3000;box-shadow:0 12px 40px rgba(0,0,0,.8);
+  animation:popIn .14s ease}
+@keyframes popIn{from{opacity:0;transform:scale(.88) translateY(-4px)}to{opacity:1;transform:none}}
+.cp-opt{width:22px;height:22px;border-radius:50%;cursor:pointer;
+  border:2.5px solid transparent;transition:transform .12s,border-color .12s}
+.cp-opt:hover{transform:scale(1.22)}
+.cp-opt.sel{border-color:rgba(255,255,255,.75);transform:scale(1.18)}
+
+/* Dropdown */
+.dd{position:absolute;right:0;top:calc(100% + 7px);
+  background:#1c2128;border:1px solid var(--bd);border-radius:10px;
+  overflow:hidden;min-width:154px;z-index:3000;
+  box-shadow:0 14px 44px rgba(0,0,0,.85);animation:popIn .14s ease}
+.ddi{display:flex;align-items:center;gap:8px;width:100%;padding:9px 14px;
+  background:none;border:none;color:var(--mu);font-size:12.5px;
+  cursor:pointer;text-align:left;transition:background .07s,color .07s}
+.ddi:hover{background:var(--bd)}
+.ddi.c:hover{color:#60a5fa}.ddi.b:hover{color:#c084fc}.ddi.d:hover{color:var(--green)}
+.ddsep{height:1px;background:var(--dim)}
+
+/* New card */
+.newc{position:absolute;width:232px;background:#0c1e3d;
+  border:1.5px dashed #388bfd;border-radius:14px;padding:12px 14px;
+  animation:ncSpring .2s ease;z-index:10;cursor:default}
+.newlbl{font-size:9.5px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.09em;color:#60a5fa;margin-bottom:8px}
+.newrow{display:flex;gap:5px;align-items:center}
+.newinp{flex:1;background:none;border:none;border-bottom:1.5px solid #388bfd80;
+  color:var(--tx);font-size:13px;outline:none;padding-bottom:2px;
+  -webkit-user-select:text;user-select:text}
+.newinp::placeholder{color:var(--su)}
+.bstart{background:#238636;color:#fff;border:none;border-radius:5px;
+  padding:3px 10px;font-size:11px;font-weight:500;cursor:pointer;white-space:nowrap}
+.bstart:hover{background:#2ea043}
+.bx{background:none;border:none;color:var(--su);cursor:pointer;font-size:14px;padding:2px 4px}
+.bx:hover{color:var(--mu)}
+
+/* SVG connections */
+.conn{fill:none;stroke-linecap:round}
+
+/* Hint bar */
+.hint{position:absolute;bottom:14px;right:130px;background:var(--sf2);
+  border:1px solid var(--bd);border-radius:8px;padding:5px 12px;
+  font-size:10.5px;color:var(--su);pointer-events:none;opacity:.55;
+  -webkit-user-select:none;user-select:none}
+
+/* Save flash */
+.sv{font-size:11px;color:#3fb950;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap}
+.sv.show{opacity:1}
+
+/* Gist button */
+.btn-gist{background:#21262d;color:#8b949e;border:1px solid #30363d;gap:5px;display:flex;align-items:center}
+.btn-gist.connected{color:#58a6ff;border-color:#388bfd40}
+.btn-gist.syncing{color:#d29922}
+.btn-gist.err{color:#f85149;border-color:#f8514940}
+
+/* Modal */
+.mo{position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:9000;
+  display:flex;align-items:center;justify-content:center;animation:moIn .18s ease}
+@keyframes moIn{from{opacity:0}to{opacity:1}}
+.mp{background:#161b22;border:1px solid #30363d;border-radius:16px;
+  padding:28px 28px 24px;width:440px;max-width:92vw;
+  box-shadow:0 24px 80px rgba(0,0,0,.9);animation:popIn .18s ease}
+.mp h2{font-size:15px;font-weight:700;margin-bottom:6px;color:#e6edf3}
+.mp p{font-size:12px;color:#8b949e;line-height:1.65;margin-bottom:16px}
+.mp a{color:#58a6ff;text-decoration:none}
+.mp a:hover{text-decoration:underline}
+.mp-row{display:flex;gap:8px;margin-bottom:10px}
+.mp-inp{flex:1;background:#0d1117;border:1px solid #30363d;border-radius:8px;
+  padding:8px 12px;color:#e6edf3;font-size:13px;font-family:monospace;outline:none}
+.mp-inp:focus{border-color:#388bfd}
+.mp-inp::placeholder{color:#484f58}
+.mp-note{font-size:11px;color:#484f58;margin-top:4px}
+.mp-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:20px}
+.mp-sep{height:1px;background:#21262d;margin:16px 0}
+.mp-status{font-size:12px;padding:8px 12px;border-radius:8px;margin-bottom:12px}
+.mp-status.ok{background:#0a3620;color:#3fb950;border:1px solid #166534}
+.mp-status.err{background:#2d0f0f;color:#f85149;border:1px solid #5c1a1a}
+
+/* ── Stats panel ── */
+.stats-panel{
+  position:absolute;right:16px;top:50%;
+  transform:translateY(-50%);
+  background:rgba(13,17,23,.92);
+  border:1px solid var(--bd);
+  border-radius:14px;padding:16px 14px;
+  display:flex;flex-direction:column;align-items:center;gap:12px;
+  z-index:300;backdrop-filter:blur(12px);
+  pointer-events:none;min-width:88px;}
+.stat-item{display:flex;flex-direction:column;align-items:center;gap:3px}
+.stat-sep{width:100%;height:1px;background:var(--dim)}
+.stat-label{font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--su)}
+.stat-value{font-size:28px;font-weight:800;line-height:1;
+  font-variant-numeric:tabular-nums}
+.stat-item.ongoing .stat-value{color:#60a5fa}
+.stat-item.donestat .stat-value{color:#4ade80}
+.stat-tag{font-size:8.5px;color:var(--su);text-align:center}
+
+/* ── AI bar ── */
+.ai-bar{
+  flex-shrink:0;
+  background:rgba(13,17,23,.98);
+  border-top:1px solid var(--dim);
+  z-index:350;
+  transition:all .22s cubic-bezier(.22,.68,0,1);}
+.ai-toggle{
+  display:flex;align-items:center;gap:9px;
+  padding:9px 20px;cursor:pointer;
+  font-size:12.5px;color:var(--mu);
+  transition:color .12s;user-select:none;}
+.ai-toggle:hover{color:var(--tx)}
+.ai-glow{color:#bc8cff;font-size:15px;filter:drop-shadow(0 0 6px #bc8cff80)}
+.ai-chevron{margin-left:auto;font-size:10px;color:var(--su);
+  transition:transform .2s}
+.ai-chevron.up{transform:rotate(180deg)}
+.ai-body{padding:0 20px 14px;display:flex;flex-direction:column;gap:8px}
+.ai-textarea{
+  width:100%;min-height:86px;max-height:200px;
+  background:var(--sf);border:1px solid var(--bd);
+  border-radius:10px;color:var(--tx);font-size:12.5px;
+  font-family:inherit;padding:10px 13px;
+  outline:none;resize:vertical;
+  transition:border-color .15s;line-height:1.55;}
+.ai-textarea:focus{border-color:#388bfd80}
+.ai-textarea::placeholder{color:var(--su)}
+.ai-actions{display:flex;justify-content:space-between;align-items:center}
+.ai-hint{font-size:10.5px;color:var(--su)}
+.ai-generating{display:flex;align-items:center;gap:6px;font-size:11.5px;color:#bc8cff}
+@keyframes aiSpin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+.ai-spin{display:inline-block;animation:aiSpin .8s linear infinite}
+
+/* ── Done animation ── */
+@keyframes doneFloat{
+  0%  {opacity:0;transform:translate(-50%,-50%) scale(0.2)}
+  20% {opacity:1;transform:translate(-50%,-60%) scale(1.45)}
+  55% {opacity:1;transform:translate(-50%,-130%) scale(1.1)}
+  100%{opacity:0;transform:translate(-50%,-220%) scale(0.85)}}
+@keyframes checkBounce{
+  0%,100%{transform:scale(1) rotate(0deg)}
+  30%{transform:scale(1.35) rotate(-8deg)}
+  60%{transform:scale(0.95) rotate(4deg)}}
+@keyframes particleRing{
+  0%{opacity:1;transform:scale(0)}
+  60%{opacity:.7;transform:scale(1.6)}
+  100%{opacity:0;transform:scale(2.2)}}
+.done-particle{
+  position:fixed;pointer-events:none;z-index:9999;
+  animation:doneFloat 1.6s cubic-bezier(.22,.68,0,1) forwards;
+  display:flex;flex-direction:column;align-items:center;gap:5px;}
+.done-particle-ring{
+  position:absolute;width:60px;height:60px;border-radius:50%;
+  border:2px solid currentColor;
+  animation:particleRing 1s .1s ease-out forwards;opacity:0;}
+.done-particle-icon{
+  font-size:44px;line-height:1;
+  filter:drop-shadow(0 0 12px currentColor);
+  animation:checkBounce .5s .1s cubic-bezier(.22,.68,0,1.4) both;}
+.done-particle-label{
+  font-size:11px;font-weight:700;color:#fff;
+  text-shadow:0 0 12px currentColor;white-space:nowrap;opacity:.9;
+  background:rgba(0,0,0,.4);padding:2px 8px;border-radius:10px;}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--bd);border-radius:10px}
+
+/* ── Delete confirmation dialog ── */
+.del-confirm-overlay{
+  position:fixed;inset:0;z-index:9000;
+  display:flex;align-items:center;justify-content:center;
+  background:rgba(0,0,0,.55);backdrop-filter:blur(4px);
+}
+.del-confirm-box{
+  background:#161b22;border:1px solid #30363d;border-radius:12px;
+  padding:28px 32px;min-width:260px;text-align:center;
+  box-shadow:0 12px 40px rgba(0,0,0,.7);
+  animation:delBoxIn .15s ease;
+}
+@keyframes delBoxIn{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:scale(1)}}
+.del-confirm-box h3{margin:0 0 6px;color:#e6edf3;font-size:15px;font-weight:600;}
+.del-confirm-box p{margin:0 0 22px;color:#8b949e;font-size:13px;line-height:1.5;}
+.del-confirm-btns{display:flex;gap:10px;justify-content:center;}
+.del-confirm-btns button{
+  padding:7px 30px;border-radius:7px;font-size:13px;
+  cursor:pointer;font-weight:600;transition:opacity .15s;border:none;
+}
+.del-confirm-btns button:hover{opacity:.82;}
+.del-btn-yes{background:#da3633;color:#fff;}
+.del-btn-no{background:#21262d;color:#e6edf3;border:1px solid #30363d!important;}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useRef, useEffect, useCallback, useMemo } = React;
+
+/* ── Color palette ── */
+const COLORS = [
+  {key:'blue',   dot:'#60a5fa',bd:'#1d4ed8',bg:'#0e2456',line:'#388bfd',glow:'rgba(96,165,250,.22)'},
+  {key:'purple', dot:'#c084fc',bd:'#7c3aed',bg:'#1e1054',line:'#a855f7',glow:'rgba(192,132,252,.22)'},
+  {key:'green',  dot:'#4ade80',bd:'#15803d',bg:'#0a3620',line:'#22c55e',glow:'rgba(74,222,128,.22)'},
+  {key:'orange', dot:'#fb923c',bd:'#c2410c',bg:'#3d1505',line:'#f97316',glow:'rgba(251,146,60,.22)'},
+  {key:'pink',   dot:'#f472b6',bd:'#be185d',bg:'#3b0f27',line:'#ec4899',glow:'rgba(244,114,182,.22)'},
+  {key:'cyan',   dot:'#22d3ee',bd:'#0e7490',bg:'#042f3c',line:'#06b6d4',glow:'rgba(34,211,238,.22)'},
+  {key:'yellow', dot:'#fbbf24',bd:'#b45309',bg:'#2e1c04',line:'#d97706',glow:'rgba(251,191,36,.22)'},
+  {key:'slate',  dot:'#94a3b8',bd:'#475569',bg:'#19253a',line:'#64748b',glow:'rgba(148,163,184,.15)'},
+];
+const CM = Object.fromEntries(COLORS.map(c=>[c.key,c]));
+const DFL = 'blue';
+
+/* ── Layout constants ── */
+const NW=232, NH=76, HG=104, VG=38, SL=NH+VG;
+const TIME_BASE_X = 60;   // canvas X where the first date group starts
+const GROUP_GAP   = 88;   // canvas px gap between consecutive date groups
+
+/* ── Helpers ── */
+let _c=2;
+const uid=()=>`n${_c++}`;
+const gid=()=>`g${_c++}`;
+const now=()=>Date.now();
+const fmt=t=>{const d=new Date(t);return`${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;};
+
+/* Date helpers */
+function todayMidnight(){const d=new Date();d.setHours(0,0,0,0);return d;}
+function isoToday(){const d=todayMidnight();return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+function dateToOffset(iso){
+  const today=todayMidnight();
+  const d=new Date(iso);d.setHours(0,0,0,0);
+  return Math.round((d-today)/86400000);
+}
+function offsetToDate(off){
+  const d=todayMidnight();
+  d.setDate(d.getDate()+off);return d;
+}
+function fmtRulerDate(d){
+  const m=d.getMonth()+1,day=d.getDate();
+  const wds=['日','一','二','三','四','五','六'];
+  return{date:`${m}月${day}日`,week:`周${wds[d.getDay()]}`};
+}
+function fmtDeadline(iso,isDone){
+  const off=dateToOffset(iso);
+  if(isDone)return{label:`✓ ${iso}`,cls:'ok'};
+  if(off<0)return{label:`过期${Math.abs(off)}天`,cls:'overdue'};
+  if(off===0)return{label:'今天截止',cls:'today-dl'};
+  if(off<=3)return{label:`还剩${off}天`,cls:'soon'};
+  return{label:`${off}天后`,cls:'neutral'};
+}
+function getTaskEmoji(title){
+  const t=title.toLowerCase();
+  // ── 会议与沟通 ──
+  if(/会议|meeting|开会/.test(t))return'📅';
+  if(/讨论|discuss|沟通|交流/.test(t))return'💬';
+  if(/电话|call|通话|打电话/.test(t))return'📞';
+  if(/邮件|email|mail|发邮件/.test(t))return'📧';
+  if(/演讲|演示|presentation|汇报|demo|展示/.test(t))return'🎤';
+  if(/面试|interview/.test(t))return'🤝';
+  if(/视频会议|zoom|teams|腾讯会议/.test(t))return'🎥';
+  if(/反馈|feedback|意见|建议/.test(t))return'💌';
+  // ── 开发与技术 ──
+  if(/bug|修复|fix|缺陷|报错/.test(t))return'🐛';
+  if(/代码|code|编程|program|coding/.test(t))return'💻';
+  if(/开发|dev|develop/.test(t))return'⌨️';
+  if(/测试|test|qa|验证/.test(t))return'🧪';
+  if(/代码审查|code.?review|审查/.test(t))return'👀';
+  if(/重构|refactor|优化代码/.test(t))return'♻️';
+  if(/部署|deploy|上线|发布|launch|release/.test(t))return'🚀';
+  if(/数据库|database|db|sql|mysql|redis/.test(t))return'🗄️';
+  if(/接口|api|集成|integration/.test(t))return'🔌';
+  if(/安全|security|漏洞|vulnerability|加密/.test(t))return'🔒';
+  if(/监控|monitor|告警|alert|日志/.test(t))return'📡';
+  if(/备份|backup|恢复|restore/.test(t))return'💾';
+  if(/更新|update|upgrade|升级/.test(t))return'⬆️';
+  if(/配置|config|设置|environment/.test(t))return'⚙️';
+  if(/架构|architecture|系统设计/.test(t))return'🏗️';
+  if(/移动端|mobile|ios|android|app/.test(t))return'📱';
+  if(/云|cloud|服务器|server|运维/.test(t))return'☁️';
+  if(/ai|人工智能|机器学习|ml|模型|neural|训练/.test(t))return'🤖';
+  if(/性能|performance|加速|提速/.test(t))return'⚡';
+  if(/前端|frontend|页面|组件/.test(t))return'🖥️';
+  if(/爬虫|scraper|抓取/.test(t))return'🕷️';
+  if(/git|版本|commit|pr|merge/.test(t))return'🔀';
+  if(/自动化|automation|脚本|script/.test(t))return'🤖';
+  if(/网络|network|wifi|vpn/.test(t))return'🌐';
+  // ── 设计与创意 ──
+  if(/设计|design|ui|ux|原型|prototype/.test(t))return'🎨';
+  if(/插图|illustration|画图|drawing/.test(t))return'✏️';
+  if(/视频|video|剪辑|拍摄/.test(t))return'🎬';
+  if(/照片|photo|摄影|拍照/.test(t))return'📷';
+  if(/logo|品牌|brand|vi/.test(t))return'💎';
+  if(/动画|animation|特效/.test(t))return'🎭';
+  if(/排版|typography|印刷/.test(t))return'🖋️';
+  if(/色彩|颜色|配色|color/.test(t))return'🎨';
+  // ── 文档与写作 ──
+  if(/文档|documentation|doc/.test(t))return'📄';
+  if(/文章|写作|博客|blog|post/.test(t))return'📝';
+  if(/报告|report|总结|汇总/.test(t))return'📑';
+  if(/翻译|translate|本地化|localization/.test(t))return'🌍';
+  if(/合同|contract|协议|agreement/.test(t))return'📜';
+  if(/需求|requirement|规范|spec/.test(t))return'📋';
+  if(/提案|proposal|方案/.test(t))return'💼';
+  // ── 研究与分析 ──
+  if(/研究|research|调研/.test(t))return'🔬';
+  if(/分析|analysis|analyze/.test(t))return'🔍';
+  if(/数据|data|统计|statistics/.test(t))return'📊';
+  if(/趋势|trend|图表|chart/.test(t))return'📈';
+  if(/调查|survey|问卷/.test(t))return'📋';
+  if(/用户研究|user.?research|访谈/.test(t))return'🗣️';
+  // ── 规划与项目 ──
+  if(/计划|plan|规划|strategy|roadmap/.test(t))return'🗺️';
+  if(/目标|goal|okr|kpi|指标/.test(t))return'🎯';
+  if(/头脑风暴|brainstorm|创意|idea/.test(t))return'💡';
+  if(/决策|decision|评估/.test(t))return'🤔';
+  if(/风险|risk|隐患/.test(t))return'⚠️';
+  if(/sprint|冲刺|迭代/.test(t))return'🏃';
+  if(/复盘|retrospective|回顾/.test(t))return'🔄';
+  if(/里程碑|milestone|阶段|phase/.test(t))return'🏆';
+  if(/优先级|priority|排期/.test(t))return'🔢';
+  if(/跟进|follow.?up|进度/.test(t))return'👣';
+  // ── 营销与增长 ──
+  if(/营销|marketing|推广/.test(t))return'📣';
+  if(/广告|ad|宣传|投放/.test(t))return'📢';
+  if(/社交媒体|social.?media|微博|微信推文/.test(t))return'📲';
+  if(/内容|content|文案|copywriting/.test(t))return'✍️';
+  if(/seo|搜索优化/.test(t))return'🔎';
+  if(/活动|event|conference|峰会/.test(t))return'🎪';
+  if(/合作|partnership|联名/.test(t))return'🤝';
+  if(/增长|growth|转化|conversion/.test(t))return'📈';
+  // ── 销售与客户 ──
+  if(/销售|sale|拜访|跑客户/.test(t))return'💼';
+  if(/客户|client|用户|customer/.test(t))return'👥';
+  if(/谈判|negotiate|报价/.test(t))return'🤝';
+  if(/签单|成交|close/.test(t))return'✅';
+  if(/售后|客服|support/.test(t))return'🎧';
+  // ── 财务与法务 ──
+  if(/财务|finance|账目|记账/.test(t))return'💰';
+  if(/预算|budget|经费/.test(t))return'🧾';
+  if(/投资|invest|融资|funding/.test(t))return'💹';
+  if(/采购|purchase|报销|reimbursement/.test(t))return'🛒';
+  if(/成本|cost|费用|expense/.test(t))return'💳';
+  if(/合规|compliance|法律|legal|审计/.test(t))return'⚖️';
+  if(/税|tax|申报/.test(t))return'🧾';
+  // ── 人事与团队 ──
+  if(/招聘|recruit|hire|招人/.test(t))return'👋';
+  if(/入职|onboard|新员工/.test(t))return'🆕';
+  if(/培训|training|学习|课程|learn/.test(t))return'📚';
+  if(/绩效|performance.?review|考核/.test(t))return'⭐';
+  if(/团队建设|teambuilding|团建/.test(t))return'🎊';
+  if(/导师|mentor|辅导|coaching/.test(t))return'🧑‍🏫';
+  if(/晋升|升职|调薪/.test(t))return'🌟';
+  // ── 日常生活 ──
+  if(/早餐|breakfast/.test(t))return'🌅';
+  if(/午餐|lunch/.test(t))return'🥗';
+  if(/晚餐|dinner/.test(t))return'🍽️';
+  if(/咖啡|coffee/.test(t))return'☕';
+  if(/喝茶|tea|茶/.test(t))return'🍵';
+  if(/喝水|水|hydrate/.test(t))return'💧';
+  if(/吃药|medication|药/.test(t))return'💊';
+  if(/睡觉|sleep|入睡/.test(t))return'😴';
+  if(/午休|nap|小睡/.test(t))return'🛌';
+  if(/起床|morning.?routine|晨间/.test(t))return'🌄';
+  if(/夜间|晚间|night.?routine/.test(t))return'🌙';
+  if(/冥想|meditation|正念|mindfulness/.test(t))return'🧘';
+  if(/瑜伽|yoga/.test(t))return'🧘‍♀️';
+  // ── 运动与健身 ──
+  if(/健身|gym|workout|力量训练/.test(t))return'💪';
+  if(/跑步|run|running|慢跑/.test(t))return'🏃';
+  if(/骑车|cycling|单车|自行车/.test(t))return'🚴';
+  if(/游泳|swim/.test(t))return'🏊';
+  if(/球|football|篮球|网球|乒乓/.test(t))return'⚽';
+  if(/散步|walk|hiking|徒步/.test(t))return'🚶';
+  if(/爬山|登山|mountain/.test(t))return'🏔️';
+  if(/拉伸|stretch|放松|cooldown/.test(t))return'🤸';
+  // ── 出行与旅行 ──
+  if(/旅行|travel|旅游/.test(t))return'✈️';
+  if(/出差|business.?trip/.test(t))return'🧳';
+  if(/通勤|上班路|commute/.test(t))return'🚇';
+  if(/开车|驾车|drive|car/.test(t))return'🚗';
+  if(/订票|booking|预订|hotel/.test(t))return'🎫';
+  if(/签证|visa|护照/.test(t))return'📕';
+  // ── 家居与生活 ──
+  if(/购物|shopping|买东西/.test(t))return'🛍️';
+  if(/超市|grocery|菜市场/.test(t))return'🛒';
+  if(/打扫|清洁|cleaning|家务/.test(t))return'🧹';
+  if(/做饭|烹饪|cooking|厨房/.test(t))return'🍳';
+  if(/洗衣|laundry|晾衣/.test(t))return'🧺';
+  if(/维修|repair|修理|maintenance/.test(t))return'🔧';
+  if(/搬家|move|装修/.test(t))return'📦';
+  if(/园艺|植物|浇花|gardening/.test(t))return'🌱';
+  if(/宠物|pet|猫|cat|狗|dog/.test(t))return'🐾';
+  // ── 健康与医疗 ──
+  if(/医生|doctor|就医|门诊/.test(t))return'🏥';
+  if(/体检|健康检查|physical/.test(t))return'🩺';
+  if(/牙医|dentist|看牙/.test(t))return'🦷';
+  if(/心理|therapy|counseling|咨询/.test(t))return'🧠';
+  // ── 学习与教育 ──
+  if(/阅读|reading|看书|book/.test(t))return'📖';
+  if(/作业|homework|练习|assignment/.test(t))return'📝';
+  if(/考试|exam|期末|期中/.test(t))return'✏️';
+  if(/毕业|graduation|学位/.test(t))return'🎓';
+  if(/上课|课程|lecture|class/.test(t))return'🏫';
+  if(/笔记|notes|记录/.test(t))return'🗒️';
+  // ── 娱乐与社交 ──
+  if(/音乐|music|听歌|playlist/.test(t))return'🎵';
+  if(/游戏|gaming|play|电竞/.test(t))return'🎮';
+  if(/电影|movie|看剧|drama|追剧/.test(t))return'🎬';
+  if(/聚会|party|聚餐/.test(t))return'🎉';
+  if(/生日|birthday/.test(t))return'🎂';
+  if(/节日|holiday|庆祝|celebration/.test(t))return'🎊';
+  if(/婚礼|wedding|结婚/.test(t))return'💍';
+  if(/朋友|friend|社交/.test(t))return'👫';
+  if(/家庭|family|亲子|陪娃/.test(t))return'👨‍👩‍👧';
+  if(/读书会|分享会|沙龙/.test(t))return'📚';
+  // ── 个人成长 ──
+  if(/复习|review|整理|归纳/.test(t))return'🗂️';
+  if(/目标设定|新年计划|年度计划/.test(t))return'🌟';
+  if(/反思|日记|journal|写日记/.test(t))return'📓';
+  if(/感恩|gratitude/.test(t))return'🙏';
+  if(/习惯|habit|打卡/.test(t))return'📌';
+  // ── 兜底 ──
+  return'✓';
+}
+
+/* ── Persistence ── */
+const SAVE_KEY='pf_v2';
+const GH_TOKEN_KEY='pf_gh_token';
+const GH_GIST_KEY='pf_gist_id';
+const GIST_FILE='project-flow.json';
+
+async function gistSave(token,gistId,data){
+  const body={description:'Project Flow 工作流数据',public:false,
+    files:{[GIST_FILE]:{content:JSON.stringify(data)}}};
+  const url=gistId?`https://api.github.com/gists/${gistId}`:'https://api.github.com/gists';
+  const r=await fetch(url,{method:gistId?'PATCH':'POST',
+    headers:{Authorization:`token ${token}`,'Content-Type':'application/json'},
+    body:JSON.stringify(body)});
+  if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.message||r.statusText);}
+  return r.json();
+}
+async function gistLoad(token,gistId){
+  const r=await fetch(`https://api.github.com/gists/${gistId}`,
+    {headers:{Authorization:`token ${token}`}});
+  if(!r.ok)throw new Error(r.statusText);
+  const d=await r.json();
+  const raw=d.files?.[GIST_FILE]?.content;
+  return raw?JSON.parse(raw):null;
+}
+async function verifyToken(token){
+  const r=await fetch('https://api.github.com/user',{headers:{Authorization:`token ${token}`}});
+  if(!r.ok)throw new Error('Token 无效');return r.json();
+}
+
+const _saved=(()=>{
+  try{
+    const s=localStorage.getItem(SAVE_KEY)||localStorage.getItem('pf_v1');
+    if(!s)return null;
+    const d=JSON.parse(s);
+    Object.keys(d.nodes||{}).forEach(id=>{
+      const n=parseInt(id.replace(/\D/g,''));
+      if(!isNaN(n)&&n>=_c)_c=n+1;
+    });
+    return d;
+  }catch{return null;}
+})();
+
+/* ── Tree layout ── */
+function calcLayout(ns){
+  const kids=pid=>Object.values(ns).filter(n=>n.parentId===pid);
+  const roots=Object.values(ns).filter(n=>!n.parentId);
+  const pos={};let sy=52;
+  function place(id,d){
+    const ch=kids(id);
+    if(!ch.length){pos[id]={x:52+d*(NW+HG),y:sy};sy+=SL;return;}
+    ch.forEach(c=>place(c.id,d+1));
+    const fy=pos[ch[0].id].y+NH/2,ly=pos[ch[ch.length-1].id].y+NH/2;
+    pos[id]={x:52+d*(NW+HG),y:(fy+ly)/2-NH/2};
+  }
+  roots.forEach(r=>{place(r.id,0);sy+=SL*.65;});
+  return pos;
+}
+
+/* ── Helpers for deadline management ── */
+function isoFromOffset(off){
+  const d=offsetToDate(off);
+  return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+/* ── Time-based layout ── */
+// Returns { pos, offsets, groupBounds }
+//   pos        : {nodeId -> {x,y}} — group-based X + tree Y
+//   offsets    : {nodeId -> daysOffset}
+//   groupBounds: {daysOffset -> {minX, maxX}} — ruler uses this for label spans
+//
+// Design: nodes are grouped by date. Each group gets its own X zone (left→right by date).
+// Within each zone the standard tree layout runs, so Continue always appears to the RIGHT.
+// This guarantees (a) no label overlap, (b) workflow left→right feel, (c) correct ruler spans.
+function calcTimeLayout(allNs, realNodes){
+  const today=todayMidnight();
+
+  /* Step 1 – effective day offset per node.
+     - Has deadline: use it (overdue+undone → clamp to 0=today)
+     - No deadline, has parent: inherit parent's offset (same date group as parent)
+     - Root, no deadline: 0 = today */
+  const offsets={};
+  function getOff(id,stack=[]){
+    if(offsets[id]!==undefined)return offsets[id];
+    if(stack.includes(id)){offsets[id]=0;return 0;}
+    const n=realNodes[id]||allNs[id];
+    if(!n){offsets[id]=0;return 0;}
+    let off;
+    if(n.deadline){
+      const d=new Date(n.deadline);d.setHours(0,0,0,0);
+      off=Math.round((d-today)/86400000);
+      // 不强制把过期节点拉到今天，保持在它原本的日期列
+    }else if(n.parentId&&allNs[n.parentId]){
+      off=getOff(n.parentId,[...stack,id]);
+    }else{
+      // 无 deadline 的根节点：锚定在创建日，不跟随今天漂移
+      if(n.createdAt){
+        const d=new Date(n.createdAt);d.setHours(0,0,0,0);
+        off=Math.round((d-today)/86400000);
+      }else{
+        off=0;
+      }
+    }
+    offsets[id]=off;
+    return off;
+  }
+  Object.keys(allNs).forEach(id=>getOff(id));
+
+  /* Step 2 – group nodeIds by offset, sort chronologically */
+  const groups={};          // off(number) -> Set<nodeId>
+  Object.keys(allNs).forEach(id=>{
+    const off=offsets[id];
+    if(!groups[off])groups[off]=new Set();
+    groups[off].add(id);
+  });
+  const sortedOffs=Object.keys(groups).map(Number).sort((a,b)=>a-b);
+
+  /* Step 3 – for each group, run tree layout on just that group's sub-graph.
+     A node whose parent belongs to a DIFFERENT group is treated as a sub-root.
+     This lets cross-group connections (e.g. after drag) still render correctly. */
+  const pos={};
+  const groupBounds={};
+  let curX=TIME_BASE_X;
+
+  sortedOffs.forEach(off=>{
+    const ids=groups[off];
+    const subNs={};
+    ids.forEach(id=>{
+      const n=allNs[id];
+      if(!n)return;
+      const parentInGroup=n.parentId&&ids.has(n.parentId);
+      // null-out parent if it's in a different group → treated as local root
+      subNs[id]={...n,parentId:parentInGroup?n.parentId:null};
+    });
+
+    const subPos=calcLayout(subNs);
+    const xVals=Object.values(subPos).map(p=>p.x);
+    if(!xVals.length)return;
+
+    const minSubX=Math.min(...xVals);            // calcLayout roots start at x=52
+    const maxSubX=Math.max(...xVals)+NW;
+    const subW=maxSubX-minSubX;
+
+    // Shift so this group's leftmost card sits at curX
+    Object.entries(subPos).forEach(([id,p])=>{
+      pos[id]={x:curX+(p.x-minSubX), y:p.y};
+    });
+
+    groupBounds[off]={minX:curX, maxX:curX+subW};
+    curX+=subW+GROUP_GAP;
+  });
+
+  /* Post-process: align cross-group entries to their parent's Y.
+     For each date group we collect all "cross-group roots" (nodes whose
+     parent lives in an earlier group), sort them by parent.y, and shift
+     each one's sub-tree independently so it lines up with its parent.
+     A small floor prevents sub-trees from overlapping even when many
+     chains land on the same date column. */
+  sortedOffs.forEach(off=>{
+    const ids=[...groups[off]];
+
+    // Build descendant set for a node, staying within this date group
+    const subtreeOf=rootId=>{
+      const set=new Set([rootId]);
+      const q=[rootId];
+      while(q.length){
+        const pid=q.shift();
+        ids.forEach(cid=>{
+          if(allNs[cid]?.parentId===pid&&!set.has(cid)){set.add(cid);q.push(cid);}
+        });
+      }
+      return set;
+    };
+
+    // cross-group roots: parent exists and lives in a DIFFERENT date group
+    const crossRoots=ids.filter(id=>{
+      const n=allNs[id];
+      return n?.parentId&&offsets[n.parentId]!==off&&pos[n.parentId]!==undefined;
+    });
+    if(!crossRoots.length)return;
+
+    // Sort top-to-bottom by parent's Y so we process chains in visual order
+    crossRoots.sort((a,b)=>(pos[allNs[a].parentId]?.y??0)-(pos[allNs[b].parentId]?.y??0));
+
+    let floorY=-Infinity; // bottom edge of the last placed sub-tree
+    crossRoots.forEach(rootId=>{
+      const tree=subtreeOf(rootId);
+      const rootCurY=pos[rootId]?.y??0;
+      const parentY=pos[allNs[rootId].parentId]?.y??0;
+      // Prefer exact parent alignment; push down only if previous sub-tree would overlap
+      const targetY=floorY===-Infinity?parentY:Math.max(parentY,floorY+VG);
+      const dy=targetY-rootCurY;
+      if(dy!==0)tree.forEach(id=>{if(pos[id])pos[id]={...pos[id],y:pos[id].y+dy};});
+      const bottom=Math.max(...[...tree].map(id=>(pos[id]?.y??0)+NH));
+      floorY=Math.max(floorY,bottom);
+    });
+  });
+
+  return{pos,offsets,groupBounds};
+}
+
+/* ── AI workflow text parser ── */
+function parseWorkflowText(text){
+  const lines=text.split('\n').map(l=>l.trimEnd()).filter(l=>l.trim());
+  if(!lines.length)return[];
+  const parsed=lines.map(line=>{
+    const indent=line.match(/^\s*/)[0].length;
+    const clean=line.trim()
+      .replace(/^[\d]+[.。、)）]\s*/,'')
+      .replace(/^[-•*→⟶▸·]\s*/,'')
+      .replace(/^第[一二三四五六七八九十百]+[步阶段期][:：\s]*/,'')
+      .replace(/^[一二三四五六七八九十百]+[.、]\s*/,'')
+      .replace(/^[（(][一二三四五六七八九十百\d]+[)）]\s*/,'')
+      .trim();
+    return clean?{text:clean,indent}:null;
+  }).filter(Boolean);
+  if(!parsed.length)return[];
+  const minInd=Math.min(...parsed.map(p=>p.indent));
+  const norm=parsed.map(p=>({...p,indent:p.indent-minInd}));
+  const specs=[];
+  const stack=[{id:null,indent:-1}];
+  let dayOff=0;
+  norm.forEach(item=>{
+    while(stack.length>1&&stack[stack.length-1].indent>=item.indent)stack.pop();
+    const parentId=stack[stack.length-1].id;
+    if(item.indent===0)dayOff++;
+    const dl=offsetToDate(dayOff);
+    const dlStr=`${dl.getFullYear()}-${String(dl.getMonth()+1).padStart(2,'0')}-${String(dl.getDate()).padStart(2,'0')}`;
+    const id=uid();
+    specs.push({id,title:item.text,parentId,deadline:dlStr});
+    stack.push({id,indent:item.indent});
+  });
+  return specs;
+}
+
+/* ── Color helper ── */
+function getColor(id,nodes){
+  let cur=id;
+  while(cur){const n=nodes[cur];if(!n)break;if(n.color)return n.color;cur=n.parentId;}
+  return DFL;
+}
+
+/* ══════════════════════════════════════════
+   App
+══════════════════════════════════════════ */
+function App(){
+  const [nodes,setNodes]=useState(_saved?.nodes||{
+    n1:{id:'n1',title:'My First Project',parentId:null,status:'active',createdAt:now(),color:'blue'}
+  });
+  const [manPos,setManPos]=useState(_saved?.manPos||{});
+  const [inputs,setInputs]=useState({});
+  const [selRoot,setSelRoot]=useState(_saved?.selRoot||'n1');
+  const [pan,setPan]=useState(_saved?.pan||{x:90,y:70});
+  const [scale,setScale]=useState(_saved?.scale||1);
+  const [savedFlash,setSavedFlash]=useState(false);
+  const [timeView,setTimeView]=useState(_saved?.timeView||false);
+
+  /* Undo history */
+  const histSnaps=useRef([]);
+  const saveSnap=useCallback(()=>{
+    const snap={
+      nodes:JSON.parse(JSON.stringify(nodes)),
+      manPos:{...manPos}
+    };
+    histSnaps.current=[...histSnaps.current.slice(-40),snap];
+  },[nodes,manPos]);
+  const undo=useCallback(()=>{
+    if(!histSnaps.current.length)return;
+    const prev=histSnaps.current[histSnaps.current.length-1];
+    histSnaps.current=histSnaps.current.slice(0,-1);
+    setNodes(prev.nodes);
+    setManPos(prev.manPos);
+  },[]);
+  const [histLen,setHistLen]=useState(0);
+
+  /* Keep histLen in sync for button disabled state */
+  useEffect(()=>{
+    // We update histLen whenever nodes or manPos change so the button re-renders
+    setHistLen(histSnaps.current.length);
+  },[nodes,manPos]);
+
+  /* Keyboard undo Ctrl+Z */
+  useEffect(()=>{
+    const h=e=>{if((e.ctrlKey||e.metaKey)&&e.key==='z'){e.preventDefault();undo();}};
+    document.addEventListener('keydown',h);return()=>document.removeEventListener('keydown',h);
+  },[undo]);
+
+  const [deleteConfirm,setDeleteConfirm]=useState(null); // {ids:Set} pending bulk delete
+
+  /* Delete key — show confirmation dialog for bulk delete */
+  useEffect(()=>{
+    const h=e=>{
+      if(e.key!=='Delete'&&e.key!=='Backspace')return;
+      if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')return;
+      const ids=selIdsRef.current;
+      if(!ids.size)return;
+      e.preventDefault();
+      setDeleteConfirm({ids:new Set(ids)});
+    };
+    document.addEventListener('keydown',h);
+    return()=>document.removeEventListener('keydown',h);
+  },[]);
+
+  /* Execute bulk delete after confirmation */
+  const confirmBulkDelete=useCallback(()=>{
+    if(!deleteConfirm)return;
+    saveSnap();
+    setNodes(prev=>{
+      const upd={...prev};
+      deleteConfirm.ids.forEach(id=>{
+        if(!upd[id])return;
+        const par=upd[id].parentId;
+        Object.values(upd).forEach(c=>{if(c.parentId===id)upd[c.id]={...upd[c.id],parentId:par??null};});
+        delete upd[id];
+      });
+      return upd;
+    });
+    setManPos(p=>{const n={...p};deleteConfirm.ids.forEach(id=>delete n[id]);return n;});
+    setSelIds(new Set());
+    setDeleteConfirm(null);
+  },[deleteConfirm,saveSnap]);
+
+  /* Done animations */
+  const [doneAnims,setDoneAnims]=useState([]);
+  const triggerDoneAnim=useCallback((sx,sy,color,emoji)=>{
+    const id=Date.now()+Math.random();
+    setDoneAnims(p=>[...p,{id,sx,sy,color,emoji}]);
+    setTimeout(()=>setDoneAnims(p=>p.filter(a=>a.id!==id)),1700);
+  },[]);
+
+  /* GitHub Gist state */
+  const [ghToken,setGhToken]=useState(()=>localStorage.getItem(GH_TOKEN_KEY)||'');
+  const [gistId,setGistId]=useState(()=>localStorage.getItem(GH_GIST_KEY)||'');
+  const [ghStatus,setGhStatus]=useState('idle');
+  const [showGhModal,setShowGhModal]=useState(false);
+  const [tokenInput,setTokenInput]=useState('');
+  const [modalErr,setModalErr]=useState('');
+  const [modalLoading,setModalLoading]=useState(false);
+  const [ghUser,setGhUser]=useState(()=>{try{return JSON.parse(localStorage.getItem('pf_gh_user')||'null');}catch{return null;}});
+  const gistTimerRef=useRef(null);
+  const [panMode,setPanMode]=useState(false);
+  const [dragId,setDragId]=useState(null);
+  const [arranging,setArranging]=useState(false);
+  const [aiBarOpen,setAiBarOpen]=useState(false);
+  const [dragHoverDay,setDragHoverDay]=useState(null);  // column highlight during time-view drag
+  const [selBox,setSelBox]=useState(null);       // marquee rect in canvas coords {x1,y1,x2,y2}
+  const [selIds,setSelIds]=useState(new Set());  // committed selected node IDs
+  const selIdsRef=useRef(selIds);
+  useEffect(()=>{selIdsRef.current=selIds;},[selIds]);
+  const panRef=useRef(false);
+  const dragRef=useRef(null);
+  const lastXY=useRef(null);
+  const selBoxRef=useRef(null);
+  const panXYRef=useRef({x:0,y:0});
+  const scaleRef=useRef(1);
+  const manPosRef=useRef({});
+  const posRef=useRef({});
+  const cvRef=useRef(null);
+  const saveTimer=useRef(null);
+  const timeViewRef=useRef(false);
+  const dragHoverDayRef=useRef(null);
+
+  useEffect(()=>{scaleRef.current=scale;},[scale]);
+  useEffect(()=>{manPosRef.current=manPos;},[manPos]);
+  useEffect(()=>{timeViewRef.current=timeView;},[timeView]);
+  useEffect(()=>{panXYRef.current=pan;},[pan]);
+
+  /* Auto-save */
+  useEffect(()=>{
+    clearTimeout(saveTimer.current);
+    saveTimer.current=setTimeout(()=>{
+      try{
+        localStorage.setItem(SAVE_KEY,JSON.stringify({nodes,manPos,selRoot,pan,scale,timeView}));
+        setSavedFlash(true);setTimeout(()=>setSavedFlash(false),1800);
+      }catch{}
+    },800);
+  },[nodes,manPos,selRoot,pan,scale,timeView]);
+
+  /* Load from Gist */
+  useEffect(()=>{
+    if(!ghToken||!gistId)return;
+    setGhStatus('syncing');
+    gistLoad(ghToken,gistId).then(data=>{
+      if(!data)return;
+      Object.keys(data.nodes||{}).forEach(id=>{
+        const n=parseInt(id.replace(/\D/g,''));
+        if(!isNaN(n)&&n>=_c)_c=n+1;
+      });
+      if(data.nodes)setNodes(data.nodes);
+      if(data.manPos)setManPos(data.manPos);
+      if(data.selRoot)setSelRoot(data.selRoot);
+      setGhStatus('ok');
+    }).catch(()=>setGhStatus('error'));
+  },[]);
+
+  /* Auto-sync to Gist */
+  useEffect(()=>{
+    if(!ghToken||!gistId)return;
+    clearTimeout(gistTimerRef.current);
+    gistTimerRef.current=setTimeout(()=>{
+      setGhStatus('syncing');
+      gistSave(ghToken,gistId,{nodes,manPos,selRoot})
+        .then(()=>setGhStatus('ok'))
+        .catch(()=>setGhStatus('error'));
+    },4000);
+  },[nodes,manPos,selRoot,ghToken,gistId]);
+
+  const connectGist=async()=>{
+    setModalErr('');setModalLoading(true);
+    try{
+      const user=await verifyToken(tokenInput.trim());
+      const g=await gistSave(tokenInput.trim(),null,{nodes,manPos,selRoot});
+      const newToken=tokenInput.trim(),newGistId=g.id;
+      localStorage.setItem(GH_TOKEN_KEY,newToken);localStorage.setItem(GH_GIST_KEY,newGistId);
+      localStorage.setItem('pf_gh_user',JSON.stringify({login:user.login,avatar:user.avatar_url}));
+      setGhToken(newToken);setGistId(newGistId);
+      setGhUser({login:user.login,avatar:user.avatar_url});
+      setGhStatus('ok');setShowGhModal(false);setTokenInput('');
+    }catch(e){setModalErr(e.message||'连接失败，请检查 Token');}
+    setModalLoading(false);
+  };
+  const disconnectGist=()=>{
+    localStorage.removeItem(GH_TOKEN_KEY);localStorage.removeItem(GH_GIST_KEY);
+    localStorage.removeItem('pf_gh_user');
+    setGhToken('');setGistId('');setGhUser(null);setGhStatus('idle');
+  };
+
+  /* Combined nodes+ghosts */
+  const allNs=useMemo(()=>{
+    const g={};
+    Object.entries(inputs).forEach(([tid,inp])=>{
+      g[tid]={id:tid,title:'',parentId:inp.parentId,status:'ghost',createdAt:now()};
+    });
+    return{...nodes,...g};
+  },[nodes,inputs]);
+
+  /* lpos: in time view returns {pos,offsets}, in tree view returns flat {id->pos} map */
+  const lposResult=useMemo(()=>
+    timeView?calcTimeLayout(allNs,nodes):null
+  ,[allNs,timeView,nodes]);
+  const lpos=useMemo(()=>
+    timeView?(lposResult?.pos||{}):calcLayout(allNs)
+  ,[allNs,timeView,lposResult]);
+  const timeOffsets=lposResult?.offsets||{};  // day offsets per node in time view
+
+  useEffect(()=>{posRef.current=lpos;},[lpos]);
+
+  /* getPos: manPos overrides lpos in both tree and time view.
+     (In time view, lpos is tree-layout so positions feel natural either way.) */
+  const getPos=useCallback(id=>manPos[id]||lpos[id],[manPos,lpos]);
+
+  const roots=useMemo(()=>Object.values(nodes).filter(n=>!n.parentId),[nodes]);
+
+  /* Helper: get effective day offset of a node (for deadline auto-assignment) */
+  const getNodeOff=useCallback(nodeId=>{
+    if(timeOffsets[nodeId]!==undefined)return timeOffsets[nodeId];
+    // fallback: compute from deadline
+    const n=nodes[nodeId];
+    if(!n)return 0;
+    if(n.deadline){const off=dateToOffset(n.deadline);return(off<0&&n.status!=='done')?0:off;}
+    return 0;
+  },[timeOffsets,nodes]);
+
+  /* Actions */
+  const addRoot=()=>{
+    saveSnap();
+    const id=uid();
+    const col=COLORS[Math.floor(Math.random()*COLORS.length)].key;
+    // In time view, new root defaults to today
+    const deadline=timeViewRef.current?isoToday():undefined;
+    setNodes(p=>({...p,[id]:{id,title:'New Project',parentId:null,status:'active',createdAt:now(),color:col,deadline}}));
+    setSelRoot(id);
+  };
+
+  const openInput=(pid,label)=>{
+    const tid=gid();
+    setInputs(p=>({...p,[tid]:{parentId:pid,label,value:''}}));
+  };
+  const closeInput=tid=>setInputs(p=>{const n={...p};delete n[tid];return n;});
+  const confirmInput=tid=>{
+    const inp=inputs[tid];
+    if(!inp?.value.trim()){closeInput(tid);return;}
+    saveSnap();
+    const id=uid();
+    let deadline;
+    if(timeViewRef.current){
+      if(inp.parentId){
+        if(inp.label==='→ Continue'){
+          // Continue：新节点落在今天（点击 Continue 的这天）
+          deadline=isoToday();
+        }else{
+          // Branch（添加分支）：与父节点同一日期列
+          const parentOff=getNodeOff(inp.parentId);
+          deadline=isoFromOffset(parentOff);
+        }
+      }else{
+        deadline=isoToday();
+      }
+    }
+    setNodes(p=>({...p,[id]:{id,title:inp.value.trim(),parentId:inp.parentId,status:'active',createdAt:now(),deadline}}));
+    closeInput(tid);
+  };
+
+  const onContinue=id=>openInput(id,'→ Continue');
+  const onBranch=id=>openInput(nodes[id]?.parentId??null,'⊕ Add Branch');
+
+  const onDone=nodeId=>{
+    saveSnap();
+    // trigger animation
+    const pos=getPos(nodeId);
+    if(pos&&cvRef.current){
+      const rect=cvRef.current.getBoundingClientRect();
+      const sx=rect.left+pos.x*scale+pan.x+NW*scale/2;
+      const sy=rect.top+pos.y*scale+pan.y+NH*scale/2;
+      const col=getColor(nodeId,nodes);
+      const emoji=getTaskEmoji(nodes[nodeId]?.title||'');
+      triggerDoneAnim(sx,sy,CM[col]?.dot||'#4ade80',emoji);
+    }
+    setNodes(prev=>{
+      const findFork=id=>{
+        const n=prev[id];
+        if(!n?.parentId)return null;
+        if(Object.values(prev).filter(x=>x.parentId===n.parentId).length>1)return n.parentId;
+        return findFork(n.parentId);
+      };
+      const forkId=findFork(nodeId);
+      const upd={...prev};
+      let cur=nodeId;
+      while(cur&&cur!==forkId){
+        upd[cur]={...upd[cur],status:'done',completedAt:now()};
+        cur=prev[cur]?.parentId??null;
+      }
+      const propagate=id=>{
+        if(!id)return;
+        const n=upd[id];
+        if(!n?.parentId)return;
+        const sibs=Object.values(upd).filter(x=>x.parentId===n.parentId);
+        if(sibs.length&&sibs.every(s=>s.status==='done')){
+          upd[n.parentId]={...upd[n.parentId],status:'done',completedAt:now()};
+          propagate(n.parentId);
+        }
+      };
+      propagate(nodeId);
+      return upd;
+    });
+  };
+
+  const onEdit=(id,t)=>setNodes(p=>({...p,[id]:{...p[id],title:t}}));
+  const onSetColor=(id,col)=>setNodes(p=>({...p,[id]:{...p[id],color:col}}));
+  const onSetDeadline=(id,dl)=>setNodes(p=>({...p,[id]:{...p[id],deadline:dl}}));
+
+  const autoArrange=()=>{
+    setArranging(true);
+    // Clear all manual positions — in time view this resets Y stacking;
+    // X is always deadline-controlled so it resets automatically via lpos.
+    setManPos({});
+    setTimeout(()=>setArranging(false),520);
+  };
+
+  const onDelete=id=>{
+    saveSnap();
+    setNodes(prev=>{
+      const node=prev[id];
+      const children=Object.values(prev).filter(n=>n.parentId===id);
+      const upd={...prev};delete upd[id];
+      children.forEach(c=>{upd[c.id]={...upd[c.id],parentId:node?.parentId??null};});
+      return upd;
+    });
+    setManPos(p=>{const n={...p};delete n[id];return n;});
+    setInputs(p=>{const cl={...p};Object.entries(cl).forEach(([tid,inp])=>{if(inp.parentId===id)delete cl[tid];});return cl;});
+  };
+
+  /* AI generate */
+  const onAiGenerate=useCallback(text=>{
+    const specs=parseWorkflowText(text);
+    if(!specs.length)return;
+    saveSnap();
+    setNodes(prev=>{
+      const upd={...prev};
+      specs.forEach(s=>{
+        upd[s.id]={id:s.id,title:s.title,parentId:s.parentId,
+          status:'active',createdAt:now(),color:DFL,deadline:s.deadline};
+      });
+      return upd;
+    });
+    const firstRoot=specs.find(s=>!s.parentId);
+    if(firstRoot)setSelRoot(firstRoot.id);
+    if(timeView)return;
+    setTimeView(true); // auto-switch to time view
+  },[saveSnap,timeView]);
+
+  /* Node drag */
+  const startNodeDrag=(e,nodeId)=>{
+    if(e.button!==0)return;
+    e.stopPropagation();
+    const p=manPosRef.current[nodeId]||posRef.current[nodeId];
+    if(!p)return;
+    dragRef.current={nodeId,mouseX:e.clientX,mouseY:e.clientY,nodeX:p.x,nodeY:p.y,snapped:false};
+    setDragId(nodeId);
+  };
+
+  /* Middle-button pan / left-button marquee */
+  const onMD=e=>{
+    if(e.button===1){
+      e.preventDefault();panRef.current=true;
+      setPanMode(true);lastXY.current={x:e.clientX,y:e.clientY};
+    } else if(e.button===0&&!dragRef.current){
+      // Start marquee selection
+      const r=cvRef.current.getBoundingClientRect();
+      const cx=(e.clientX-r.left-panXYRef.current.x)/scaleRef.current;
+      const cy=(e.clientY-r.top-panXYRef.current.y)/scaleRef.current;
+      selBoxRef.current={x1:cx,y1:cy,x2:cx,y2:cy};
+      setSelBox({x1:cx,y1:cy,x2:cx,y2:cy});
+    }
+  };
+
+  const onMM=useCallback(e=>{
+    if(panRef.current&&lastXY.current){
+      const dx=e.clientX-lastXY.current.x,dy=e.clientY-lastXY.current.y;
+      setPan(p=>({x:p.x+dx,y:p.y+dy}));
+      lastXY.current={x:e.clientX,y:e.clientY};
+    }
+    if(dragRef.current){
+      const{nodeId,mouseX,mouseY,nodeX,nodeY}=dragRef.current;
+      if(!dragRef.current.snapped){saveSnap();dragRef.current.snapped=true;}
+      const s=scaleRef.current;
+      const dx=(e.clientX-mouseX)/s,dy=(e.clientY-mouseY)/s;
+      setManPos(p=>({...p,[nodeId]:{x:nodeX+dx,y:nodeY+dy}}));
+    }
+    if(selBoxRef.current&&!dragRef.current){
+      const r=cvRef.current?.getBoundingClientRect();if(!r)return;
+      const cx=(e.clientX-r.left-panXYRef.current.x)/scaleRef.current;
+      const cy=(e.clientY-r.top-panXYRef.current.y)/scaleRef.current;
+      const nb={...selBoxRef.current,x2:cx,y2:cy};
+      selBoxRef.current=nb;
+      setSelBox({...nb});
+    }
+  },[saveSnap]);
+
+  const GRID=24;
+  const onMU=useCallback(e=>{
+    if(dragRef.current){
+      const{nodeId,mouseX,mouseY}=dragRef.current;
+      const moved=Math.abs(e.clientX-mouseX)>6||Math.abs(e.clientY-mouseY)>6;
+      setManPos(p=>{
+        const cur=p[nodeId];if(!cur)return p;
+        return{...p,[nodeId]:{x:Math.round(cur.x/GRID)*GRID,y:Math.round(cur.y/GRID)*GRID}};
+      });
+      if(!moved){
+        // Click on node (no drag) → select it
+        setSelIds(prev=>{
+          if(e.ctrlKey||e.metaKey){
+            const n=new Set(prev);
+            if(n.has(nodeId))n.delete(nodeId);else n.add(nodeId);
+            return n;
+          }
+          return new Set([nodeId]);
+        });
+      }
+    }
+    if(selBoxRef.current){
+      const b=selBoxRef.current;
+      const dx=Math.abs(b.x2-b.x1),dy=Math.abs(b.y2-b.y1);
+      if(dx>6||dy>6){
+        // Commit selection
+        const minX=Math.min(b.x1,b.x2),maxX=Math.max(b.x1,b.x2);
+        const minY=Math.min(b.y1,b.y2),maxY=Math.max(b.y1,b.y2);
+        // posRef.current is updated separately; use current lpos+manPos snapshot
+        // We read from the DOM positions via selBoxRef; actual ids computed by activeSelIds
+        // Just re-compute here synchronously using current posRef
+        const ids=new Set();
+        Object.keys(posRef.current).forEach(id=>{
+          const p=manPosRef.current[id]||posRef.current[id];
+          if(!p)return;
+          if(p.x>=minX&&p.x+NW<=maxX&&p.y>=minY&&p.y+NH<=maxY)ids.add(id);
+        });
+        setSelIds(ids);
+      } else {
+        // Just a click → clear selection
+        setSelIds(new Set());
+      }
+      selBoxRef.current=null;
+      setSelBox(null);
+    }
+    panRef.current=false;dragRef.current=null;
+    setPanMode(false);setDragId(null);
+    setDragHoverDay(null);dragHoverDayRef.current=null;
+  },[]);
+
+  /* Scroll zoom */
+  const onWheel=useCallback(e=>{
+    e.preventDefault();
+    const f=e.deltaY<0?1.1:1/1.1;
+    const r=cvRef.current.getBoundingClientRect();
+    const mx=e.clientX-r.left,my=e.clientY-r.top;
+    setScale(prev=>{
+      const next=Math.max(.1,Math.min(4,prev*f));
+      setPan(p=>({x:mx-(mx-p.x)*(next/prev),y:my-(my-p.y)*(next/prev)}));
+      return next;
+    });
+  },[]);
+
+  useEffect(()=>{
+    const el=cvRef.current;if(!el)return;
+    el.addEventListener('wheel',onWheel,{passive:false});
+    return()=>el.removeEventListener('wheel',onWheel);
+  },[onWheel]);
+
+  const onCtx=e=>e.preventDefault();
+
+  /* Jump to project */
+  const jumpTo=useCallback(rid=>{
+    const p=manPosRef.current[rid]||posRef.current[rid];
+    if(!p||!cvRef.current)return;
+    const{clientWidth:w,clientHeight:h}=cvRef.current;
+    const s=scaleRef.current;
+    setPan({x:w/2-p.x*s-NW/2*s,y:h/2-p.y*s-NH/2*s});
+    setSelRoot(rid);
+  },[]);
+
+  /* Live marquee selection — preview while dragging, committed after release */
+  const activeSelIds=useMemo(()=>{
+    if(!selBox)return selIds;
+    const minX=Math.min(selBox.x1,selBox.x2);
+    const maxX=Math.max(selBox.x1,selBox.x2);
+    const minY=Math.min(selBox.y1,selBox.y2);
+    const maxY=Math.max(selBox.y1,selBox.y2);
+    const ids=new Set();
+    Object.keys(allNs).forEach(id=>{
+      const p=manPos[id]||lpos[id];
+      if(!p)return;
+      if(p.x>=minX&&p.x+NW<=maxX&&p.y>=minY&&p.y+NH<=maxY)ids.add(id);
+    });
+    return ids;
+  },[selBox,allNs,manPos,lpos,selIds]);
+
+  /* SVG lines — inline gp avoids stale closure on getPos */
+  const lines=useMemo(()=>{
+    const gp=id=>manPos[id]||lpos[id];
+    return Object.values(allNs)
+      .filter(n=>n.parentId&&gp(n.id)&&gp(n.parentId))
+      .map(n=>{
+        const pa=gp(n.parentId),ch=gp(n.id);
+        const col=n.status==='done'?'#22c55e':n.status==='ghost'?'#388bfd':(CM[getColor(n.id,nodes)]?.line||'#388bfd');
+        return{id:`${n.parentId}→${n.id}`,
+          x1:pa.x+NW,y1:pa.y+NH/2,x2:ch.x,y2:ch.y+NH/2,
+          done:n.status==='done',ghost:n.status==='ghost',col};
+      });
+  },[allNs,manPos,lpos,nodes]);
+
+  // Canvas virtual size: enough to fit all positioned nodes
+  const allPts=Object.keys(allNs).map(id=>getPos(id)).filter(Boolean);
+  const cvW=allPts.length?Math.max(2200,...allPts.map(p=>p.x+NW+200)):2200;
+  const cvH=allPts.length?Math.max(1800,...allPts.map(p=>p.y+NH+200)):1800;
+
+  const curClass=`cv-wrap${panMode?' pan-mode':''}${dragId?' drag-node':''}${arranging?' arranging':''}`;
+
+  /* Canvas width for ruler */
+  const [cvAreaW,setCvAreaW]=useState(0);
+  useEffect(()=>{
+    if(!cvRef.current)return;
+    const obs=new ResizeObserver(e=>setCvAreaW(e[0].contentRect.width));
+    obs.observe(cvRef.current);return()=>obs.disconnect();
+  },[]);
+
+  return(
+    <div style={{display:'flex',flexDirection:'column',height:'100vh',overflow:'hidden'}}>
+      {/* ── Header ── */}
+      <header className="hdr">
+        <div className="hdr-l">
+          <button
+            className="btn btn-ghost undo-btn"
+            onClick={undo}
+            disabled={histLen===0}
+            title="撤销上一步 (Ctrl+Z)">
+            ↩ 回撤
+          </button>
+          <span className="hdr-logo">⬡ Project Flow</span>
+        </div>
+        <div className="hdr-r">
+          <span className={`sv${savedFlash?' show':''}`}>✓ 已保存</span>
+          <span className="pct">{Math.round(scale*100)}%</span>
+          <button
+            className={`btn btn-ghost${timeView?' btn-active':''}`}
+            onClick={()=>setTimeView(v=>!v)}
+            title="切换时间轴 / 树形视图">
+            {timeView?'⬡ 树形':'⏱ 时间轴'}
+          </button>
+          <button className={`btn btn-gist${ghStatus==='ok'?' connected':ghStatus==='syncing'?' syncing':ghStatus==='error'?' err':''}`}
+            onClick={()=>setShowGhModal(true)}>
+            {ghStatus==='syncing'?'⟳':''}{ghUser?` @${ghUser.login}`:'☁ Gist 同步'}
+          </button>
+          <button className="btn btn-ghost" onClick={autoArrange} title="自动整理">⊞ 整理</button>
+          <button className="btn btn-ghost" onClick={()=>{setScale(1);setPan({x:90,y:70});}}>Reset</button>
+          <button className="btn btn-green" onClick={addRoot}>＋ New Project</button>
+        </div>
+      </header>
+
+      {/* ── Main ── */}
+      <div className="layout" style={{flex:1,overflow:'hidden'}}>
+        <Sidebar roots={roots} nodes={nodes} selRoot={selRoot} onSelect={jumpTo} onAdd={addRoot}/>
+
+        <div className="cv-area">
+          {/* Time ruler */}
+          {timeView&&(
+            <TimeRuler pan={pan} scale={scale} cvW={cvAreaW} groupBounds={lposResult?.groupBounds||{}}/>
+          )}
+
+          {/* Canvas */}
+          <div ref={cvRef} className={curClass}
+            onMouseDown={onMD} onMouseMove={onMM} onMouseUp={onMU} onMouseLeave={onMU}
+            onContextMenu={onCtx}>
+
+            <div className="cv" style={{transform:`translate(${pan.x}px,${pan.y}px) scale(${scale})`,width:cvW,height:cvH}}>
+              {/* Today group highlight — spans the actual X range of today's nodes */}
+              {timeView&&lposResult?.groupBounds?.[0]&&(()=>{
+                const{minX,maxX}=lposResult.groupBounds[0];
+                return<div className="today-col-bg" style={{left:minX-16,width:maxX-minX+32,top:0,height:cvH}}/>;
+              })()}
+
+              {/* SVG connections */}
+              <svg style={{position:'absolute',inset:0,width:cvW,height:cvH,
+                overflow:'visible',pointerEvents:'none'}}>
+                {lines.map(l=>{
+                  /* Build a Bezier path that looks good for both:
+                     - forward connections (parent left of child): classic S-curve
+                     - same-column / backward connections: elbow that goes around */
+                  let d;
+                  const dx=l.x2-l.x1;
+                  if(dx>10){
+                    // Normal forward: cubic Bezier
+                    const mx=(l.x1+l.x2)/2;
+                    d=`M${l.x1},${l.y1} C${mx},${l.y1} ${mx},${l.y2} ${l.x2},${l.y2}`;
+                  }else{
+                    // Same column or backward: elbow route going right then back
+                    const elbX=l.x1+54;
+                    const my=(l.y1+l.y2)/2;
+                    d=`M${l.x1},${l.y1} C${elbX},${l.y1} ${elbX},${my} ${elbX},${my} C${elbX},${my} ${elbX},${l.y2} ${l.x2},${l.y2}`;
+                  }
+                  return(
+                    <path key={l.id} className="conn"
+                      d={d}
+                      stroke={l.col}
+                      strokeWidth={l.done?2.8:l.ghost?1.5:2}
+                      opacity={l.ghost?.3:1}
+                      strokeDasharray={l.ghost?'5 4':undefined}
+                      style={{
+                        transition:'stroke .45s,stroke-width .3s',
+                        filter:l.done?'drop-shadow(0 0 6px #22c55e80)':'none'
+                      }}/>
+                  );
+                })}
+                <style>{`@keyframes lineIn{from{opacity:0}to{opacity:1}}`}</style>
+              </svg>
+
+              {/* Node cards */}
+              {Object.values(nodes).map(n=>{
+                const p=getPos(n.id);if(!p)return null;
+                const col=getColor(n.id,nodes);
+                return(
+                  <NodeCard key={n.id} node={n} p={p} colorKey={col}
+                    isDragging={dragId===n.id}
+                    isSelected={activeSelIds.has(n.id)}
+                    onDragStart={e=>{
+                      // Node drag cancels marquee
+                      selBoxRef.current=null;setSelBox(null);
+                      startNodeDrag(e,n.id);
+                    }}
+                    onContinue={()=>onContinue(n.id)}
+                    onBranch={()=>onBranch(n.id)}
+                    onDone={()=>onDone(n.id)}
+                    onEdit={t=>onEdit(n.id,t)}
+                    onDelete={()=>onDelete(n.id)}
+                    onSetColor={c=>onSetColor(n.id,c)}
+                    onSetDeadline={dl=>onSetDeadline(n.id,dl)}/>
+                );
+              })}
+
+              {/* Marquee selection box */}
+              {selBox&&(()=>{
+                const x=Math.min(selBox.x1,selBox.x2);
+                const y=Math.min(selBox.y1,selBox.y2);
+                const w=Math.abs(selBox.x2-selBox.x1);
+                const h=Math.abs(selBox.y2-selBox.y1);
+                return<div style={{
+                  position:'absolute',left:x,top:y,width:w,height:h,
+                  border:'1.5px solid rgba(88,166,255,.7)',
+                  background:'rgba(56,139,253,.08)',
+                  borderRadius:4,pointerEvents:'none',zIndex:500
+                }}/>;
+              })()}
+
+              {/* Ghost input cards */}
+              {Object.entries(inputs).map(([tid,inp])=>{
+                const p=getPos(tid);if(!p)return null;
+                return(
+                  <NewCard key={tid} p={p} label={inp.label} value={inp.value}
+                    onChange={v=>setInputs(p=>({...p,[tid]:{...p[tid],value:v}}))}
+                    onConfirm={()=>confirmInput(tid)} onCancel={()=>closeInput(tid)}/>
+                );
+              })}
+            </div>
+
+            {/* Stats panel */}
+            <StatsPanel nodes={nodes}/>
+            <div className="hint">中键拖拽 · 左键框选 · Delete删除 · 滚轮缩放</div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── AI Bar ── */}
+      <AIBar open={aiBarOpen} onToggle={()=>setAiBarOpen(o=>!o)} onGenerate={onAiGenerate}/>
+
+      {/* ── Delete confirmation dialog ── */}
+      {deleteConfirm&&(
+        <div className="del-confirm-overlay" onClick={()=>setDeleteConfirm(null)}>
+          <div className="del-confirm-box" onClick={e=>e.stopPropagation()}>
+            <h3>确认删除</h3>
+            <p>将删除 <strong style={{color:'#e6edf3'}}>{deleteConfirm.ids.size}</strong> 个节点<br/>（子节点将挂到父节点，可撤销）</p>
+            <div className="del-confirm-btns">
+              <button className="del-btn-yes" onClick={confirmBulkDelete}>Yes</button>
+              <button className="del-btn-no" onClick={()=>setDeleteConfirm(null)}>No</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Done animations ── */}
+      {doneAnims.map(a=>(
+        <div key={a.id} className="done-particle"
+          style={{left:a.sx,top:a.sy,color:a.color}}>
+          <div className="done-particle-ring"/>
+          <div className="done-particle-icon">{a.emoji}</div>
+          <div className="done-particle-label" style={{color:a.color}}>Done!</div>
+        </div>
+      ))}
+
+      {/* ── GitHub Gist Modal ── */}
+      {showGhModal&&(
+        <div className="mo" onClick={e=>{if(e.target===e.currentTarget)setShowGhModal(false)}}>
+          <div className="mp">
+            {ghUser?(
+              <>
+                <h2>☁ GitHub Gist 同步</h2>
+                {ghStatus==='ok'&&<div className="mp-status ok">✓ 已连接 — @{ghUser.login}</div>}
+                {ghStatus==='error'&&<div className="mp-status err">⚠ 同步失败，请检查 Token</div>}
+                <p style={{marginBottom:8}}>Gist ID：<code style={{fontSize:11,color:'#8b949e'}}>{gistId}</code></p>
+                <p>工作流每次修改后自动同步到 GitHub Gist（私有）。</p>
+                <div className="mp-sep"/>
+                <div className="mp-actions">
+                  <button className="btn btn-ghost" onClick={()=>setShowGhModal(false)}>关闭</button>
+                  <button className="btn" style={{background:'#5c1a1a',color:'#f85149',border:'1px solid #7d2626'}}
+                    onClick={()=>{disconnectGist();setShowGhModal(false);}}>断开连接</button>
+                </div>
+              </>
+            ):(
+              <>
+                <h2>☁ 连接 GitHub Gist 云同步</h2>
+                <p>连接后，工作流将自动备份到你的 GitHub 私有 Gist。</p>
+                <p><b>获取 Token：</b><br/>
+                  1. 打开 <a href="https://github.com/settings/tokens/new" target="_blank" rel="noreferrer">github.com/settings/tokens/new</a><br/>
+                  2. 勾选 <b>gist</b> 权限并生成，复制到下方
+                </p>
+                <div className="mp-row">
+                  <input className="mp-inp" type="password" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
+                    value={tokenInput} onChange={e=>setTokenInput(e.target.value)}
+                    onKeyDown={e=>e.key==='Enter'&&tokenInput.trim()&&connectGist()} autoFocus/>
+                </div>
+                {modalErr&&<div className="mp-status err">{modalErr}</div>}
+                <div className="mp-note">Token 仅存储在浏览器 localStorage，不发送到第三方。</div>
+                <div className="mp-actions">
+                  <button className="btn btn-ghost" onClick={()=>{setShowGhModal(false);setTokenInput('');setModalErr('');}}>取消</button>
+                  <button className="btn btn-green" disabled={!tokenInput.trim()||modalLoading}
+                    onClick={connectGist}>{modalLoading?'连接中…':'连接 Gist'}</button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════
+   Time Ruler
+══════════════════════════════════════════ */
+/* TimeRuler uses groupBounds from calcTimeLayout for non-overlapping date labels */
+function TimeRuler({pan,scale,cvW,groupBounds}){
+  const cols=useMemo(()=>{
+    return Object.entries(groupBounds||{}).map(([off,{minX,maxX}])=>{
+      const d=parseInt(off);
+      const screenLeft=pan.x+minX*scale-8;
+      const w=(maxX-minX)*scale+16;
+      if(screenLeft+w<-20||screenLeft>(cvW||9999)+20)return null;
+      const date=offsetToDate(d);
+      const{date:dateStr,week}=fmtRulerDate(date);
+      return{d,screenLeft,w:Math.max(w,72),dateStr,week,isToday:d===0,isPast:d<0};
+    }).filter(Boolean).sort((a,b)=>a.d-b.d);
+  },[groupBounds,pan,scale,cvW]);
+
+  return(
+    <div className="time-ruler">
+      {cols.map(c=>(
+        <div key={c.d}
+          className={`tr-col${c.isToday?' today':c.isPast?' past':''}`}
+          style={{left:c.screenLeft,width:c.w}}>
+          {c.isToday&&<span className="tr-today-badge">TODAY</span>}
+          <div className="tr-date">{c.dateStr}</div>
+          <div className="tr-week">{c.week}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════
+   Stats Panel
+══════════════════════════════════════════ */
+function StatsPanel({nodes}){
+  const allArr=Object.values(nodes);
+  const doneCount=allArr.filter(n=>n.status==='done').length;
+  const ongoingCount=allArr.length-doneCount;
+  return(
+    <div className="stats-panel">
+      <div className="stat-item ongoing">
+        <div className="stat-value">{ongoingCount}</div>
+        <div className="stat-label">On-going</div>
+        <div className="stat-tag">⚡ 进行中</div>
+      </div>
+      <div className="stat-sep"/>
+      <div className="stat-item donestat">
+        <div className="stat-value">{doneCount}</div>
+        <div className="stat-label">Done</div>
+        <div className="stat-tag">✓ 已完成</div>
+      </div>
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════
+   AI Bar
+══════════════════════════════════════════ */
+function AIBar({open,onToggle,onGenerate}){
+  const [text,setText]=useState('');
+  const [generating,setGenerating]=useState(false);
+
+  const handle=()=>{
+    if(!text.trim()||generating)return;
+    setGenerating(true);
+    setTimeout(()=>{
+      onGenerate(text.trim());
+      setText('');setGenerating(false);
+    },520);
+  };
+
+  return(
+    <div className="ai-bar">
+      <div className="ai-toggle" onClick={onToggle}>
+        <span className="ai-glow">✦</span>
+        <span>AI 工作流生成</span>
+        <span style={{fontSize:11,color:'var(--su)',marginLeft:4}}>
+          {open?'— 输入任务描述，自动整理成工作节点':'— 点击展开'}
+        </span>
+        <span className={`ai-chevron${open?' up':''}`}>▲</span>
+      </div>
+      {open&&(
+        <div className="ai-body">
+          <textarea
+            className="ai-textarea"
+            placeholder={'描述你的任务和计划，AI 自动整理成工作流节点...\n\n示例：\n1. 市场调研\n   - 竞品分析\n   - 用户访谈\n2. 产品设计\n   - 线框图\n   - 原型测试\n3. 开发上线'}
+            value={text}
+            onChange={e=>setText(e.target.value)}
+            onKeyDown={e=>{if(e.key==='Enter'&&(e.ctrlKey||e.metaKey))handle();}}
+          />
+          <div className="ai-actions">
+            <span className="ai-hint">支持缩进层级 · 数字列表 · 中文步骤 · Ctrl+Enter 生成</span>
+            {generating?(
+              <span className="ai-generating">
+                <span className="ai-spin">⟳</span> 生成工作流中…
+              </span>
+            ):(
+              <button className="btn btn-green" onClick={handle} disabled={!text.trim()}>
+                ✦ 生成工作流
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════
+   Sidebar
+══════════════════════════════════════════ */
+function Sidebar({roots,nodes,selRoot,onSelect,onAdd}){
+  const countAll=rid=>{let c=0;const v=id=>{c++;Object.values(nodes).filter(n=>n.parentId===id).forEach(x=>v(x.id));};v(rid);return c;};
+  const countDone=rid=>{let c=0;const v=id=>{if(nodes[id]?.status==='done')c++;Object.values(nodes).filter(n=>n.parentId===id).forEach(x=>v(x.id));};v(rid);return c;};
+  const timeline=useMemo(()=>
+    Object.values(nodes)
+      .sort((a,b)=>(b.completedAt||b.createdAt)-(a.completedAt||a.createdAt))
+      .slice(0,35)
+  ,[nodes]);
+  return(
+    <aside className="sb">
+      <div className="sb-head">
+        <div className="sb-lbl">Projects</div>
+        {roots.map(r=>{
+          const col=CM[r.color||DFL];
+          const total=countAll(r.id),done=countDone(r.id);
+          const allDone=done===total&&total>0;
+          return(
+            <div key={r.id} className={`pi${selRoot===r.id?' sel':''}`}
+              style={{'--pi-c':col?.line||'#388bfd'}}
+              onClick={()=>onSelect(r.id)}>
+              <div className="pdot" style={{
+                background:allDone?'#22c55e':col?.dot||'#60a5fa',
+                boxShadow:selRoot===r.id?`0 0 8px ${allDone?'#22c55e':col?.dot||'#388bfd'}`:'none'
+              }}/>
+              <span className="pname">{r.title}</span>
+              <span className={`pcnt${allDone?' all-done':''}`}>{done}/{total}</span>
+            </div>
+          );
+        })}
+        <button className="sb-add" onClick={onAdd}>
+          <span style={{fontSize:14,lineHeight:1}}>＋</span> New project
+        </button>
+      </div>
+      <div className="tl-wrap">
+        <div className="tl-lbl">Timeline</div>
+        {timeline.map(n=>{
+          const col=CM[getColor(n.id,nodes)];
+          const isDone=n.status==='done';
+          return(
+            <div key={n.id} className="ti">
+              <div className="tidot" style={{
+                background:isDone?'#22c55e':col?.dot||'#60a5fa',
+                boxShadow:`0 0 6px ${isDone?'#22c55e':col?.dot||'#388bfd'}70`
+              }}/>
+              <div className="tic">
+                <div className="tit">{n.title}</div>
+                <div className="tim">
+                  {isDone&&n.completedAt?`✓ Done ${fmt(n.completedAt)}`:`${fmt(n.createdAt)}`}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </aside>
+  );
+}
+
+/* ══════════════════════════════════════════
+   NodeCard
+══════════════════════════════════════════ */
+function NodeCard({node,p,colorKey,isDragging,isSelected,onDragStart,onContinue,onBranch,onDone,onEdit,onDelete,onSetColor,onSetDeadline}){
+  const [menuOpen,setMenuOpen]=useState(false);
+  const [cpOpen,setCpOpen]=useState(false);
+  const [editing,setEditing]=useState(false);
+  const [editDl,setEditDl]=useState(false);
+  const [val,setVal]=useState(node.title);
+  const [dlVal,setDlVal]=useState(node.deadline||'');
+  const ddRef=useRef(null);
+  const cpRef=useRef(null);
+  const inRef=useRef(null);
+  const dlRef=useRef(null);
+
+  useEffect(()=>{setVal(node.title);},[node.title]);
+  useEffect(()=>{setDlVal(node.deadline||'');},[node.deadline]);
+  useEffect(()=>{if(editing){inRef.current?.focus();inRef.current?.select();}},[editing]);
+  useEffect(()=>{if(editDl){dlRef.current?.focus();dlRef.current?.showPicker?.();}},[editDl]);
+
+  useEffect(()=>{
+    const h=e=>{
+      if(ddRef.current&&!ddRef.current.contains(e.target))setMenuOpen(false);
+      if(cpRef.current&&!cpRef.current.contains(e.target))setCpOpen(false);
+    };
+    document.addEventListener('mousedown',h);
+    return()=>document.removeEventListener('mousedown',h);
+  },[]);
+
+  const commit=()=>{if(val.trim())onEdit(val.trim());setEditing(false);};
+  const commitDl=()=>{
+    if(dlVal)onSetDeadline(dlVal);
+    else onSetDeadline(null);
+    setEditDl(false);
+  };
+  const isDone=node.status==='done';
+  const col=CM[colorKey]||CM[DFL];
+  const cssV={
+    '--nc-dot':isDone?'#4ade80':col.dot,
+    '--nc-bd': isDone?'#166534':col.bd,
+    '--nc-glow':isDone?'rgba(74,222,128,.15)':col.glow,
+  };
+
+  /* Deadline display */
+  const dlInfo=node.deadline?fmtDeadline(node.deadline,isDone):null;
+
+  return(
+    <div className={`nc${isDone?' s-done':''}${isDragging?' is-drag':''}${isSelected?' is-sel':''}`}
+      style={{left:p.x,top:p.y,...cssV}}
+      onMouseDown={onDragStart}>
+
+      {/* Color picker */}
+      <div ref={cpRef} className="cp-wrap">
+        <div className="cp-ring"
+          onMouseDown={e=>e.stopPropagation()}
+          onClick={e=>{e.stopPropagation();setCpOpen(o=>!o);}}/>
+        {cpOpen&&(
+          <div className="cp-panel" onMouseDown={e=>e.stopPropagation()}>
+            {COLORS.map(c=>(
+              <div key={c.key}
+                className={`cp-opt${colorKey===c.key?' sel':''}`}
+                style={{background:c.dot}}
+                title={c.key}
+                onClick={e=>{e.stopPropagation();onSetColor(c.key);setCpOpen(false);}}/>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Title */}
+      <div className="nc-top">
+        <div className="ndot"/>
+        {editing
+          ?<input ref={inRef} className="nti" value={val}
+              onChange={e=>setVal(e.target.value)}
+              onMouseDown={e=>e.stopPropagation()}
+              onBlur={commit}
+              onKeyDown={e=>{if(e.key==='Enter')commit();if(e.key==='Escape'){setVal(node.title);setEditing(false);}}}/>
+          :<span className="ntitle" title="双击编辑"
+              onDoubleClick={e=>{e.stopPropagation();setEditing(true);}}
+              onMouseDown={e=>{/* allow drag */}}>
+              {node.title}
+            </span>
+        }
+      </div>
+
+      {/* Bottom row */}
+      <div className="nc-bot">
+        <div style={{display:'flex',flexDirection:'column',gap:2,flex:1,minWidth:0}}>
+          <span className="ndate">
+            {fmt(node.createdAt)}
+            {node.completedAt&&<span style={{color:'#4ade80'}}> ✓{fmt(node.completedAt)}</span>}
+          </span>
+          {/* Deadline */}
+          {editDl?(
+            <input ref={dlRef} className="ndeadline-input" type="date"
+              value={dlVal}
+              onChange={e=>setDlVal(e.target.value)}
+              onMouseDown={e=>e.stopPropagation()}
+              onBlur={commitDl}
+              onKeyDown={e=>{if(e.key==='Enter')commitDl();if(e.key==='Escape')setEditDl(false);}}/>
+          ):(
+            <span
+              className={`ndeadline${dlInfo?` ${dlInfo.cls}`:' neutral'}`}
+              title="点击设置截止日期"
+              onMouseDown={e=>e.stopPropagation()}
+              onClick={e=>{e.stopPropagation();setEditDl(true);}}>
+              {dlInfo?`⏱ ${dlInfo.label}`:'+ 截止日期'}
+            </span>
+          )}
+        </div>
+        <div className="nac">
+          <button className="ib" title="Edit"
+            onMouseDown={e=>e.stopPropagation()}
+            onClick={e=>{e.stopPropagation();setEditing(true);}}>✎</button>
+          <button className="ib del" title="Delete"
+            onMouseDown={e=>e.stopPropagation()}
+            onClick={e=>{e.stopPropagation();onDelete();}}>✕</button>
+          <div ref={ddRef} style={{position:'relative'}}>
+            <button className={`arb${menuOpen?' open':''}`}
+              onMouseDown={e=>e.stopPropagation()}
+              onClick={e=>{e.stopPropagation();setMenuOpen(o=>!o);}}>▶</button>
+            {menuOpen&&(
+              <div className="dd" onMouseDown={e=>e.stopPropagation()}>
+                <button className="ddi c" onClick={()=>{onContinue();setMenuOpen(false);}}>→ Continue</button>
+                <button className="ddi b" onClick={()=>{onBranch();setMenuOpen(false);}}>⊕ Add Branch</button>
+                <div className="ddsep"/>
+                <button className="ddi d" onClick={()=>{onDone();setMenuOpen(false);}}>✓ Done</button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════
+   NewCard
+══════════════════════════════════════════ */
+function NewCard({p,label,value,onChange,onConfirm,onCancel}){
+  const ref=useRef(null);
+  useEffect(()=>{ref.current?.focus();},[]);
+  return(
+    <div className="newc" style={{left:p.x,top:p.y}}
+      onMouseDown={e=>e.stopPropagation()}>
+      <div className="newlbl">{label}</div>
+      <div className="newrow">
+        <input ref={ref} className="newinp" value={value}
+          onChange={e=>onChange(e.target.value)}
+          placeholder="Task name..."
+          onKeyDown={e=>{if(e.key==='Enter')onConfirm();if(e.key==='Escape')onCancel();}}/>
+        <button className="bstart" onClick={onConfirm}>Start</button>
+        <button className="bx" onClick={onCancel}>✕</button>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
