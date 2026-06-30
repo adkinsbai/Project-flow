@@ -1,0 +1,9 @@
+node_modules/
+release/
+desktop/
+package.json
+package-lock.json
+supabase/
+scripts/
+.agents/
+.codex/
