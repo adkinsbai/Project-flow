@@ -6,6 +6,8 @@
 <title>Project Flow</title>
 <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script src="./config.js"></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -403,6 +405,68 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
 .del-confirm-btns button:hover{opacity:.82;}
 .del-btn-yes{background:#da3633;color:#fff;}
 .del-btn-no{background:#21262d;color:#e6edf3;border:1px solid #30363d!important;}
+
+/* ── Account and guide ── */
+.auth-gate{position:fixed;inset:0;z-index:9500;display:flex;align-items:center;justify-content:center;
+  background:radial-gradient(circle at 50% 10%,rgba(56,139,253,.16),transparent 34%),#0d1117}
+.auth-card{width:420px;max-width:92vw;background:#161b22;border:1px solid #30363d;border-radius:16px;
+  padding:28px;box-shadow:0 26px 90px rgba(0,0,0,.76)}
+.auth-logo{font-size:20px;font-weight:800;margin-bottom:8px;
+  background:linear-gradient(125deg,#58a6ff 20%,#bc8cff 80%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.auth-sub{font-size:13px;line-height:1.6;color:#8b949e;margin-bottom:20px}
+.auth-tabs{display:flex;background:#0d1117;border:1px solid #30363d;border-radius:9px;padding:3px;margin-bottom:16px}
+.auth-tabs button{flex:1;border:0;border-radius:7px;background:transparent;color:#8b949e;padding:8px 10px;cursor:pointer}
+.auth-tabs button.active{background:#1c2128;color:#e6edf3}
+.auth-field{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+.auth-field label{font-size:11px;font-weight:700;color:#8b949e;text-transform:uppercase;letter-spacing:.08em}
+.auth-field input{height:40px;border-radius:8px;border:1px solid #30363d;background:#0d1117;color:#e6edf3;
+  padding:0 12px;font-size:13px;outline:none}
+.auth-field input:focus{border-color:#388bfd}
+.auth-error{background:#2d0f0f;border:1px solid #5c1a1a;color:#f87171;border-radius:8px;padding:8px 10px;font-size:12px;margin-bottom:10px}
+.auth-note{font-size:11px;color:#484f58;line-height:1.55;margin-top:12px}
+.acct-btn{display:flex;align-items:center;gap:6px}
+.ent-pill{font-size:11px;color:#8b949e;background:#21262d;border:1px solid #30363d;border-radius:999px;padding:5px 10px;white-space:nowrap}
+.ent-pill.ok{color:#3fb950;border-color:#23863680;background:#0a2318}
+.ent-pill.warn{color:#fbbf24;border-color:#b4530980;background:#2e1c04}
+.ent-pill.bad{color:#f87171;border-color:#7f1d1d;background:#2d0f0f}
+.account-panel{width:480px}
+.account-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid #21262d}
+.account-row:last-child{border-bottom:0}
+.account-k{font-size:11px;color:#8b949e;text-transform:uppercase;letter-spacing:.08em}
+.account-v{font-size:13px;color:#e6edf3;text-align:right}
+.license-row{display:flex;gap:8px;margin-top:12px}
+.license-row input{flex:1;height:38px;border-radius:8px;border:1px solid #30363d;background:#0d1117;color:#e6edf3;
+  padding:0 12px;font-size:13px;outline:none;font-family:monospace}
+.guide-modal{width:860px;max-width:94vw;padding:0;overflow:hidden}
+.guide-head{display:flex;justify-content:space-between;gap:12px;padding:20px 22px;border-bottom:1px solid #21262d}
+.guide-title{font-size:17px;font-weight:800;color:#e6edf3}
+.guide-sub{font-size:12px;color:#8b949e;margin-top:4px}
+.guide-body{display:grid;grid-template-columns:1.08fr .92fr;gap:0;min-height:420px}
+.guide-visual{background:#0d1117;border-right:1px solid #21262d;padding:22px;display:flex;align-items:center;justify-content:center}
+.guide-shot{width:100%;max-width:430px;aspect-ratio:4/3;border:1px solid #30363d;border-radius:12px;background:#090d13;position:relative;overflow:hidden;
+  box-shadow:0 20px 60px rgba(0,0,0,.55)}
+.guide-shot .mini-top{height:34px;border-bottom:1px solid #21262d;display:flex;align-items:center;gap:6px;padding:0 12px;color:#8b949e;font-size:10px}
+.guide-shot .mini-side{position:absolute;left:0;top:34px;bottom:0;width:92px;background:#0d1117;border-right:1px solid #21262d;padding:12px 8px}
+.guide-shot .mini-pill{height:18px;border-radius:6px;background:#1c2128;margin-bottom:8px}
+.guide-shot .mini-canvas{position:absolute;left:92px;right:0;top:34px;bottom:0;background-image:radial-gradient(circle,#1c2230 1px,transparent 1px);background-size:18px 18px}
+.guide-mini-node{position:absolute;width:112px;height:42px;border-radius:10px;background:#0e2456;border:1px solid #1d4ed8;box-shadow:0 0 0 3px rgba(96,165,250,.16)}
+.guide-mini-node.done{background:#0a2318;border-color:#166534;box-shadow:0 0 0 3px rgba(74,222,128,.16)}
+.guide-mini-line{position:absolute;height:2px;background:#388bfd;transform-origin:left center}
+.guide-content{padding:22px;display:flex;flex-direction:column}
+.guide-step-label{font-size:11px;color:#58a6ff;font-weight:800;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px}
+.guide-content h3{font-size:21px;color:#e6edf3;margin:0 0 10px}
+.guide-content p{font-size:13px;line-height:1.7;color:#8b949e;margin:0 0 14px}
+.guide-list{display:flex;flex-direction:column;gap:9px;margin-top:4px}
+.guide-list div{font-size:12.5px;color:#c9d1d9;background:#0d1117;border:1px solid #21262d;border-radius:8px;padding:9px 10px}
+.guide-progress{display:flex;gap:6px;margin-top:auto;padding-top:20px}
+.guide-dot{height:6px;flex:1;border-radius:999px;background:#30363d}
+.guide-dot.active{background:#388bfd}
+.guide-actions{display:flex;justify-content:space-between;gap:10px;padding:16px 22px;border-top:1px solid #21262d}
+@media(max-width:760px){
+  .hdr{padding:8px 10px}.hdr-r{gap:5px}.ent-pill{display:none}.btn{padding:5px 8px}
+  .guide-body{grid-template-columns:1fr}.guide-visual{border-right:0;border-bottom:1px solid #21262d;padding:14px}.guide-shot{max-width:320px}
+}
 </style>
 </head>
 <body>
@@ -641,6 +705,37 @@ const SAVE_KEY='pf_v2';
 const GH_TOKEN_KEY='pf_gh_token';
 const GH_GIST_KEY='pf_gist_id';
 const GIST_FILE='project-flow.json';
+const GUIDE_LOCAL_PREFIX='pf_seen_guide_';
+
+const PF_CONFIG = {
+  supabaseUrl: window.PROJECT_FLOW_SUPABASE_URL || '',
+  supabaseAnonKey: window.PROJECT_FLOW_SUPABASE_ANON_KEY || '',
+};
+const supabaseClient = (PF_CONFIG.supabaseUrl&&PF_CONFIG.supabaseAnonKey&&window.supabase)
+  ? window.supabase.createClient(PF_CONFIG.supabaseUrl,PF_CONFIG.supabaseAnonKey)
+  : null;
+
+async function getSessionToken(){
+  if(!supabaseClient)return null;
+  const {data}=await supabaseClient.auth.getSession();
+  return data.session?.access_token||null;
+}
+
+async function apiCall(path,{method='GET',body}={}){
+  if(!supabaseClient)throw new Error('后端尚未配置 Supabase');
+  const token=await getSessionToken();
+  const r=await fetch(`${PF_CONFIG.supabaseUrl}/functions/v1/${path}`,{
+    method,
+    headers:{
+      'Content-Type':'application/json',
+      ...(token?{Authorization:`Bearer ${token}`}:{})
+    },
+    ...(body!==undefined?{body:JSON.stringify(body)}:{})
+  });
+  const data=await r.json().catch(()=>({}));
+  if(!r.ok)throw new Error(data.error||data.message||'请求失败');
+  return data;
+}
 
 async function gistSave(token,gistId,data){
   const body={description:'Project Flow 工作流数据',public:false,
@@ -881,6 +976,19 @@ function getColor(id,nodes){
    App
 ══════════════════════════════════════════ */
 function App(){
+  const [authMode,setAuthMode]=useState('login');
+  const [session,setSession]=useState(null);
+  const [authReady,setAuthReady]=useState(!supabaseClient);
+  const [authErr,setAuthErr]=useState('');
+  const [authBusy,setAuthBusy]=useState(false);
+  const [accountOpen,setAccountOpen]=useState(false);
+  const [profileBundle,setProfileBundle]=useState(null);
+  const [guideOpen,setGuideOpen]=useState(false);
+  const [guideAuto,setGuideAuto]=useState(false);
+  const [licenseKey,setLicenseKey]=useState('');
+  const [licenseBusy,setLicenseBusy]=useState(false);
+  const [licenseErr,setLicenseErr]=useState('');
+  const [cloudStatus,setCloudStatus]=useState('local');
   const [nodes,setNodes]=useState(_saved?.nodes||{
     n1:{id:'n1',title:'My First Project',parentId:null,status:'active',createdAt:now(),color:'blue'}
   });
@@ -891,6 +999,82 @@ function App(){
   const [scale,setScale]=useState(_saved?.scale||1);
   const [savedFlash,setSavedFlash]=useState(false);
   const [timeView,setTimeView]=useState(_saved?.timeView||false);
+
+  const currentUser=session?.user||null;
+  const entitlement=profileBundle?.entitlement||null;
+
+  const refreshMe=useCallback(async()=>{
+    if(!supabaseClient||!session)return;
+    const data=await apiCall('me');
+    setProfileBundle(data);
+    const seenLocal=localStorage.getItem(`${GUIDE_LOCAL_PREFIX}${data.user.id}`)==='1';
+    if(data.profile&&!data.profile.hasSeenGuide&&!seenLocal){
+      setGuideAuto(true);
+      setGuideOpen(true);
+    }
+  },[session]);
+
+  useEffect(()=>{
+    if(!supabaseClient)return;
+    supabaseClient.auth.getSession().then(({data})=>{
+      setSession(data.session);
+      setAuthReady(true);
+    });
+    const {data:{subscription}}=supabaseClient.auth.onAuthStateChange((_event,nextSession)=>{
+      setSession(nextSession);
+      setAuthReady(true);
+      setProfileBundle(null);
+    });
+    return()=>subscription.unsubscribe();
+  },[]);
+
+  useEffect(()=>{if(session)refreshMe().catch(e=>setAuthErr(e.message));},[session,refreshMe]);
+
+  const submitAuth=async({email,password})=>{
+    if(!supabaseClient){setAuthErr('还没有配置 Supabase，先看 README 里的部署步骤。');return;}
+    setAuthErr('');setAuthBusy(true);
+    try{
+      const fn=authMode==='login'?supabaseClient.auth.signInWithPassword:supabaseClient.auth.signUp;
+      const {error}=await fn.call(supabaseClient.auth,{email,password});
+      if(error)throw error;
+      if(authMode==='signup')setAuthErr('注册成功。如果 Supabase 开启了邮箱确认，请先去邮箱完成验证。');
+    }catch(e){setAuthErr(e.message||'登录失败');}
+    setAuthBusy(false);
+  };
+
+  const signOut=async()=>{
+    if(supabaseClient)await supabaseClient.auth.signOut();
+    setSession(null);setProfileBundle(null);setAccountOpen(false);
+  };
+
+  const finishGuide=async()=>{
+    setGuideOpen(false);
+    if(profileBundle?.user?.id)localStorage.setItem(`${GUIDE_LOCAL_PREFIX}${profileBundle.user.id}`,'1');
+    if(session){
+      try{await apiCall('me',{method:'PATCH',body:{hasSeenGuide:true}});await refreshMe();}
+      catch(e){}
+    }
+  };
+
+  const startCheckout=async()=>{
+    setLicenseErr('');
+    try{
+      const data=await apiCall('creem-checkout',{method:'POST'});
+      if(data.checkoutUrl)window.location.href=data.checkoutUrl;
+      else throw new Error('Creem 没有返回 checkoutUrl');
+    }catch(e){setLicenseErr(e.message||'创建支付链接失败');}
+  };
+
+  const redeemLicense=async()=>{
+    if(!licenseKey.trim())return;
+    setLicenseErr('');setLicenseBusy(true);
+    try{
+      await apiCall('creem-license',{method:'POST',body:{key:licenseKey.trim()}});
+      setLicenseKey('');
+      await refreshMe();
+    }catch(e){setLicenseErr(e.message||'激活失败');}
+    setLicenseBusy(false);
+  };
 
   /* Undo history */
   const histSnaps=useRef([]);
@@ -994,6 +1178,8 @@ function App(){
   const posRef=useRef({});
   const cvRef=useRef(null);
   const saveTimer=useRef(null);
+  const cloudTimer=useRef(null);
+  const cloudLoadedRef=useRef(false);
   const timeViewRef=useRef(false);
   const dragHoverDayRef=useRef(null);
 
@@ -1012,6 +1198,34 @@ function App(){
       }catch{}
     },800);
   },[nodes,manPos,selRoot,pan,scale,timeView]);
+
+  useEffect(()=>{
+    if(!session)return;
+    cloudLoadedRef.current=false;
+    setCloudStatus('syncing');
+    apiCall('workspace').then(data=>{
+      const ws=data.workspace?.data;
+      if(ws?.nodes)setNodes(ws.nodes);
+      if(ws?.manPos)setManPos(ws.manPos);
+      if(ws?.selRoot)setSelRoot(ws.selRoot);
+      if(ws?.pan)setPan(ws.pan);
+      if(ws?.scale)setScale(ws.scale);
+      if(typeof ws?.timeView==='boolean')setTimeView(ws.timeView);
+      cloudLoadedRef.current=true;
+      setCloudStatus(ws?'ok':'local');
+    }).catch(()=>{cloudLoadedRef.current=true;setCloudStatus('error');});
+  },[session?.user?.id]);
+
+  useEffect(()=>{
+    if(!session||!cloudLoadedRef.current)return;
+    clearTimeout(cloudTimer.current);
+    cloudTimer.current=setTimeout(()=>{
+      setCloudStatus('syncing');
+      apiCall('workspace',{method:'PUT',body:{data:{nodes,manPos,selRoot,pan,scale,timeView},title:'Project Flow Workspace'}})
+        .then(()=>setCloudStatus('ok'))
+        .catch(()=>setCloudStatus('error'));
+    },1800);
+  },[nodes,manPos,selRoot,pan,scale,timeView,session?.user?.id]);
 
   /* Load from Gist */
   useEffect(()=>{
@@ -1416,6 +1630,16 @@ function App(){
         </div>
         <div className="hdr-r">
           <span className={`sv${savedFlash?' show':''}`}>✓ 已保存</span>
+          {entitlement&&(
+            <span className={`ent-pill ${entitlement.hasLifetime?'ok':entitlement.trialActive?'warn':'bad'}`}>
+              {entitlement.hasLifetime?'永久会员':entitlement.trialActive?`试用剩 ${entitlement.daysLeft} 天`:'试用已结束'}
+            </span>
+          )}
+          {currentUser&&(
+            <span className={`ent-pill ${cloudStatus==='ok'?'ok':cloudStatus==='error'?'bad':''}`}>
+              {cloudStatus==='syncing'?'同步中':cloudStatus==='ok'?'云端已保存':cloudStatus==='error'?'云同步失败':'本地数据'}
+            </span>
+          )}
           <span className="pct">{Math.round(scale*100)}%</span>
           <button
             className={`btn btn-ghost${timeView?' btn-active':''}`}
@@ -1426,6 +1650,10 @@ function App(){
           <button className={`btn btn-gist${ghStatus==='ok'?' connected':ghStatus==='syncing'?' syncing':ghStatus==='error'?' err':''}`}
             onClick={()=>setShowGhModal(true)}>
             {ghStatus==='syncing'?'⟳':''}{ghUser?` @${ghUser.login}`:'☁ Gist 同步'}
+          </button>
+          <button className="btn btn-ghost" onClick={()=>{setGuideAuto(false);setGuideOpen(true);}}>使用指南</button>
+          <button className="btn btn-ghost acct-btn" onClick={()=>setAccountOpen(true)}>
+            {currentUser?currentUser.email?.split('@')[0]:'Account'}
           </button>
           <button className="btn btn-ghost" onClick={autoArrange} title="自动整理">⊞ 整理</button>
           <button className="btn btn-ghost" onClick={()=>{setScale(1);setPan({x:90,y:70});}}>Reset</button>
@@ -1479,7 +1707,7 @@ function App(){
                       d={d}
                       stroke={l.col}
                       strokeWidth={l.done?2.8:l.ghost?1.5:2}
-                      opacity={l.ghost?.3:1}
+                      opacity={l.ghost ? .3 : 1}
                       strokeDasharray={l.ghost?'5 4':undefined}
                       style={{
                         transition:'stroke .45s,stroke-width .3s',
@@ -1548,6 +1776,42 @@ function App(){
       {/* ── AI Bar ── */}
       <AIBar open={aiBarOpen} onToggle={()=>setAiBarOpen(o=>!o)} onGenerate={onAiGenerate}/>
 
+      {!authReady&&<AuthGate loading/>}
+      {authReady&&!currentUser&&(
+        <AuthGate
+          mode={authMode}
+          setMode={setAuthMode}
+          error={authErr}
+          busy={authBusy}
+          configured={!!supabaseClient}
+          onSubmit={submitAuth}/>
+      )}
+      {currentUser&&entitlement&&!entitlement.active&&(
+        <LockedOverlay
+          entitlement={entitlement}
+          onAccount={()=>setAccountOpen(true)}
+          onGuide={()=>{setGuideAuto(false);setGuideOpen(true);}}/>
+      )}
+      {accountOpen&&currentUser&&(
+        <AccountModal
+          user={currentUser}
+          bundle={profileBundle}
+          licenseKey={licenseKey}
+          setLicenseKey={setLicenseKey}
+          licenseBusy={licenseBusy}
+          licenseErr={licenseErr}
+          onClose={()=>setAccountOpen(false)}
+          onCheckout={startCheckout}
+          onRedeem={redeemLicense}
+          onSignOut={signOut}/>
+      )}
+      {guideOpen&&(
+        <GuideModal
+          auto={guideAuto}
+          onClose={()=>{setGuideOpen(false);setGuideAuto(false);}}
+          onFinish={finishGuide}/>
+      )}
+
       {/* ── Delete confirmation dialog ── */}
       {deleteConfirm&&(
         <div className="del-confirm-overlay" onClick={()=>setDeleteConfirm(null)}>
@@ -1615,6 +1879,163 @@ function App(){
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function AuthGate({mode='login',setMode,error,busy,configured=true,onSubmit,loading=false}){
+  const [email,setEmail]=useState('');
+  const [password,setPassword]=useState('');
+  if(loading)return(
+    <div className="auth-gate"><div className="auth-card"><div className="auth-logo">Project Flow</div><div className="auth-sub">正在连接账户系统...</div></div></div>
+  );
+  return(
+    <div className="auth-gate">
+      <div className="auth-card">
+        <div className="auth-logo">Project Flow</div>
+        <div className="auth-sub">登录后可获得 30 天免费试用。购买 9.9 元永久会员后，Creem 会完成支付和 License Key 分发。</div>
+        <div className="auth-tabs">
+          <button className={mode==='login'?'active':''} onClick={()=>setMode('login')}>登录</button>
+          <button className={mode==='signup'?'active':''} onClick={()=>setMode('signup')}>注册</button>
+        </div>
+        {!configured&&<div className="auth-error">Supabase 尚未配置。请先在页面里填入项目 URL 和 anon key，或完成 README 的部署步骤。</div>}
+        {error&&<div className={mode==='signup'&&error.includes('注册成功')?'mp-status ok':'auth-error'}>{error}</div>}
+        <form onSubmit={e=>{e.preventDefault();onSubmit({email,password});}}>
+          <div className="auth-field"><label>Email</label><input type="email" value={email} onChange={e=>setEmail(e.target.value)} required autoComplete="email"/></div>
+          <div className="auth-field"><label>Password</label><input type="password" value={password} onChange={e=>setPassword(e.target.value)} required minLength="6" autoComplete={mode==='login'?'current-password':'new-password'}/></div>
+          <button className="btn btn-green" style={{width:'100%',height:40}} disabled={busy||!configured}>{busy?'处理中...':mode==='login'?'登录':'注册并开始 30 天试用'}</button>
+        </form>
+        <div className="auth-note">账户、试用期和会员状态由 Supabase 后端管理；支付与 License Key 由 Creem 处理。前端不会保存 Creem API Key。</div>
+      </div>
+    </div>
+  );
+}
+
+function LockedOverlay({entitlement,onAccount,onGuide}){
+  return(
+    <div className="auth-gate" style={{background:'rgba(13,17,23,.86)',backdropFilter:'blur(8px)'}}>
+      <div className="auth-card">
+        <div className="auth-logo">试用已结束</div>
+        <div className="auth-sub">你的 30 天免费试用已经结束。购买 9.9 元永久会员或输入 Creem License Key 后即可继续使用 Project Flow。</div>
+        <div style={{display:'flex',gap:8}}>
+          <button className="btn btn-green" onClick={onAccount}>购买 / 激活</button>
+          <button className="btn btn-ghost" onClick={onGuide}>查看使用指南</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AccountModal({user,bundle,licenseKey,setLicenseKey,licenseBusy,licenseErr,onClose,onCheckout,onRedeem,onSignOut}){
+  const ent=bundle?.entitlement;
+  const profile=bundle?.profile;
+  return(
+    <div className="mo" onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
+      <div className="mp account-panel">
+        <h2>账户与会员</h2>
+        <div className="account-row"><div><div className="account-k">Email</div></div><div className="account-v">{user.email}</div></div>
+        <div className="account-row"><div><div className="account-k">当前状态</div></div><div className="account-v">{ent?.hasLifetime?'永久会员':ent?.trialActive?`30 天试用中，剩 ${ent.daysLeft} 天`:'试用已结束'}</div></div>
+        <div className="account-row"><div><div className="account-k">试用截止</div></div><div className="account-v">{profile?.trialEndsAt?new Date(profile.trialEndsAt).toLocaleDateString():'-'}</div></div>
+        {ent?.hasLifetime?(
+          <div className="mp-status ok" style={{marginTop:14}}>✓ 已解锁永久会员</div>
+        ):(
+          <>
+            <div className="mp-sep"/>
+            <p>永久会员价格 9.9 元。点击购买会跳转到 Creem 托管支付页；购买后 Creem 会提供 License Key，也会通过 webhook 自动解锁账户。</p>
+            <button className="btn btn-green" onClick={onCheckout}>购买永久会员 9.9 元</button>
+            <div className="license-row">
+              <input value={licenseKey} onChange={e=>setLicenseKey(e.target.value)} placeholder="输入 Creem License Key"/>
+              <button className="btn btn-ghost" disabled={licenseBusy||!licenseKey.trim()} onClick={onRedeem}>{licenseBusy?'激活中':'激活'}</button>
+            </div>
+            {licenseErr&&<div className="auth-error" style={{marginTop:10}}>{licenseErr}</div>}
+          </>
+        )}
+        <div className="mp-actions">
+          <button className="btn btn-ghost" onClick={onClose}>关闭</button>
+          <button className="btn" style={{background:'#5c1a1a',color:'#f85149',border:'1px solid #7d2626'}} onClick={onSignOut}>退出登录</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const GUIDE_STEPS=[
+  {
+    label:'Setup',
+    title:'先建立一个项目',
+    body:'从右上角 New Project 开始，左侧会出现项目入口，画布中央会生成第一个节点。节点就是你工作流里的一个明确动作。',
+    bullets:['双击节点标题可以改名','拖拽节点可重新摆放','时间轴模式会按截止日期分组'],
+    variant:'setup'
+  },
+  {
+    label:'Continue',
+    title:'Continue 代表顺着当前路径推进',
+    body:'当一个任务完成后还有下一步，就点节点右下角菜单里的 Continue。它会把新节点接在当前节点之后，形成清晰的执行链条。',
+    bullets:['适合“调研 -> 原型 -> 开发 -> 发布”这种顺序流程','在时间轴里 Continue 默认落到今天','线条表示任务之间的承接关系'],
+    variant:'continue'
+  },
+  {
+    label:'Branch',
+    title:'Branch 代表并行分支或备选路径',
+    body:'Branch 不接在当前节点后面，而是创建同级分支。它适合拆出并行方案、候选任务或同一阶段的多条路线。',
+    bullets:['同一父节点下可以有多个分支','所有分支完成后，父级会自动收尾','用不同颜色区分项目和路径'],
+    variant:'branch'
+  },
+  {
+    label:'Done',
+    title:'用 Done 给流程收尾',
+    body:'点击 Done 后节点会变绿，并触发完成动画。连续路径会自动向上标记，帮助你看见哪些工作已经真正闭环。',
+    bullets:['完成态会同步到左侧进度计数','删除和批量删除都可用 Ctrl+Z 撤回','收尾后可以继续补充新的后续节点'],
+    variant:'done'
+  }
+];
+
+function GuideShot({variant}){
+  const done=variant==='done';
+  return(
+    <div className="guide-shot">
+      <div className="mini-top"><span>Project Flow</span><span style={{marginLeft:'auto'}}>{variant}</span></div>
+      <div className="mini-side"><div className="mini-pill"/><div className="mini-pill" style={{width:'70%'}}/><div className="mini-pill" style={{width:'84%'}}/></div>
+      <div className="mini-canvas">
+        <div className={`guide-mini-node ${done?'done':''}`} style={{left:34,top:58}}/>
+        <div className="guide-mini-line" style={{left:146,top:79,width:54}}/>
+        <div className={`guide-mini-node ${done?'done':''}`} style={{left:198,top:58}}/>
+        {(variant==='branch'||variant==='done')&&<>
+          <div className="guide-mini-line" style={{left:146,top:79,width:70,transform:'rotate(25deg)'}}/>
+          <div className={`guide-mini-node ${done?'done':''}`} style={{left:214,top:118}}/>
+        </>}
+        {variant==='setup'&&<div className="guide-mini-node" style={{left:116,top:118,background:'#1e1054',borderColor:'#7c3aed'}}/>}
+      </div>
+    </div>
+  );
+}
+
+function GuideModal({auto,onClose,onFinish}){
+  const [step,setStep]=useState(0);
+  const cur=GUIDE_STEPS[step];
+  const last=step===GUIDE_STEPS.length-1;
+  return(
+    <div className="mo" onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
+      <div className="mp guide-modal">
+        <div className="guide-head">
+          <div><div className="guide-title">Project Flow 使用指南</div><div className="guide-sub">{auto?'首次登录推荐快速看一遍':'随时回顾核心操作'}</div></div>
+          <button className="btn btn-ghost" onClick={onClose}>关闭</button>
+        </div>
+        <div className="guide-body">
+          <div className="guide-visual"><GuideShot variant={cur.variant}/></div>
+          <div className="guide-content">
+            <div className="guide-step-label">{cur.label} · {step+1}/{GUIDE_STEPS.length}</div>
+            <h3>{cur.title}</h3>
+            <p>{cur.body}</p>
+            <div className="guide-list">{cur.bullets.map(b=><div key={b}>{b}</div>)}</div>
+            <div className="guide-progress">{GUIDE_STEPS.map((_,i)=><span key={i} className={`guide-dot${i<=step?' active':''}`}/>)}</div>
+          </div>
+        </div>
+        <div className="guide-actions">
+          <button className="btn btn-ghost" disabled={step===0} onClick={()=>setStep(s=>Math.max(0,s-1))}>上一步</button>
+          {last?<button className="btn btn-green" onClick={onFinish}>完成指南</button>:<button className="btn btn-green" onClick={()=>setStep(s=>Math.min(GUIDE_STEPS.length-1,s+1))}>下一步</button>}
+        </div>
+      </div>
     </div>
   );
 }
