@@ -35,6 +35,16 @@ Creem will handle payment and license key delivery. The app also lets a user pas
 2. Apply the SQL migration in `supabase/migrations/20260630000000_project_flow_auth_creem.sql`.
 3. Deploy Edge Functions:
 
+For the current hosted project, the prepared Windows helper is:
+
+```powershell
+.\scripts\deploy-supabase.ps1 -ProjectRef pksjwrajpyobkzxlqmrz -AppUrl https://project-flow-delta.vercel.app/
+```
+
+It prompts for the Supabase access token, database password, service role key, and Creem secrets without committing them to git.
+
+Manual commands:
+
 ```bash
 supabase functions deploy me
 supabase functions deploy workspace
