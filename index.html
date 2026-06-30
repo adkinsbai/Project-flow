@@ -500,6 +500,9 @@ const DFL = 'blue';
 const NW=232, NH=76, HG=104, VG=38, SL=NH+VG;
 const TIME_BASE_X = 60;   // canvas X where the first date group starts
 const GROUP_GAP   = 88;   // canvas px gap between consecutive date groups
+const TIME_NODE_STEP = NW + HG;
+const TIME_LANE_BASE_Y = 52;
+const TIME_PROJECT_GAP = 64;
 
 /* ── Helpers ── */
 let _c=2;
@@ -805,21 +808,20 @@ function isoFromOffset(off){
 }
 
 /* ── Time-based layout ── */
-// Returns { pos, offsets, groupBounds }
-//   pos        : {nodeId -> {x,y}} — group-based X + tree Y
-//   offsets    : {nodeId -> daysOffset}
-//   groupBounds: {daysOffset -> {minX, maxX}} — ruler uses this for label spans
-//
-// Design: nodes are grouped by date. Each group gets its own X zone (left→right by date).
-// Within each zone the standard tree layout runs, so Continue always appears to the RIGHT.
-// This guarantees (a) no label overlap, (b) workflow left→right feel, (c) correct ruler spans.
-function calcTimeLayout(allNs, realNodes){
+// Returns { pos, offsets, groupBounds, rootOf, laneBounds }
+// X is controlled by date columns. Y is controlled by project lanes.
+// A dragged project lane stores only a Y offset, so dates stay aligned.
+function calcTimeLayout(allNs, realNodes, laneOffsets={}){
   const today=todayMidnight();
+  const nodeList=Object.values(allNs);
+  const byId=allNs;
+  const children={};
+  nodeList.forEach(n=>{
+    if(!children[n.parentId||'__root__'])children[n.parentId||'__root__']=[];
+    children[n.parentId||'__root__'].push(n);
+  });
+  Object.values(children).forEach(list=>list.sort((a,b)=>(a.createdAt||0)-(b.createdAt||0)||String(a.id).localeCompare(String(b.id))));
 
-  /* Step 1 – effective day offset per node.
-     - Has deadline: use it (overdue+undone → clamp to 0=today)
-     - No deadline, has parent: inherit parent's offset (same date group as parent)
-     - Root, no deadline: 0 = today */
   const offsets={};
   function getOff(id,stack=[]){
     if(offsets[id]!==undefined)return offsets[id];
@@ -830,114 +832,115 @@ function calcTimeLayout(allNs, realNodes){
     if(n.deadline){
       const d=new Date(n.deadline);d.setHours(0,0,0,0);
       off=Math.round((d-today)/86400000);
-      // 不强制把过期节点拉到今天，保持在它原本的日期列
     }else if(n.parentId&&allNs[n.parentId]){
       off=getOff(n.parentId,[...stack,id]);
+    }else if(n.createdAt){
+      const d=new Date(n.createdAt);d.setHours(0,0,0,0);
+      off=Math.round((d-today)/86400000);
     }else{
-      // 无 deadline 的根节点：锚定在创建日，不跟随今天漂移
-      if(n.createdAt){
-        const d=new Date(n.createdAt);d.setHours(0,0,0,0);
-        off=Math.round((d-today)/86400000);
-      }else{
-        off=0;
-      }
+      off=0;
     }
     offsets[id]=off;
     return off;
   }
   Object.keys(allNs).forEach(id=>getOff(id));
 
-  /* Step 2 – group nodeIds by offset, sort chronologically */
-  const groups={};          // off(number) -> Set<nodeId>
-  Object.keys(allNs).forEach(id=>{
-    const off=offsets[id];
-    if(!groups[off])groups[off]=new Set();
-    groups[off].add(id);
-  });
-  const sortedOffs=Object.keys(groups).map(Number).sort((a,b)=>a-b);
+  const rootOf={};
+  function getRoot(id,stack=[]){
+    if(rootOf[id])return rootOf[id];
+    const n=byId[id];
+    if(!n||!n.parentId||!byId[n.parentId]||stack.includes(id)){
+      rootOf[id]=id;
+      return id;
+    }
+    const root=getRoot(n.parentId,[...stack,id]);
+    rootOf[id]=root;
+    return root;
+  }
+  Object.keys(allNs).forEach(id=>getRoot(id));
 
-  /* Step 3 – for each group, run tree layout on just that group's sub-graph.
-     A node whose parent belongs to a DIFFERENT group is treated as a sub-root.
-     This lets cross-group connections (e.g. after drag) still render correctly. */
-  const pos={};
+  const roots=Object.values(allNs)
+    .filter(n=>rootOf[n.id]===n.id)
+    .sort((a,b)=>(a.createdAt||0)-(b.createdAt||0)||String(a.id).localeCompare(String(b.id)));
+
+  const rowOf={};
+  const rowMaxByRoot={};
+  function assignRows(id,row,stack=[]){
+    if(stack.includes(id)){rowOf[id]=row;return row;}
+    rowOf[id]=row;
+    let maxRow=row;
+    const kids=children[id]||[];
+    kids.forEach((child,idx)=>{
+      const childRow=idx===0?row:maxRow+1;
+      maxRow=Math.max(maxRow,assignRows(child.id,childRow,[...stack,id]));
+    });
+    return maxRow;
+  }
+  roots.forEach(root=>{
+    rowMaxByRoot[root.id]=assignRows(root.id,0);
+  });
+
+  const slotOf={};
+  function assignSlots(id,stack=[]){
+    if(slotOf[id]!==undefined)return slotOf[id];
+    if(stack.includes(id)){slotOf[id]=0;return 0;}
+    const n=byId[id];
+    let slot=0;
+    if(n?.parentId&&byId[n.parentId]){
+      const parentSlot=assignSlots(n.parentId,[...stack,id]);
+      slot=offsets[n.parentId]===offsets[id]?parentSlot+1:0;
+    }
+    slotOf[id]=slot;
+    return slot;
+  }
+  Object.keys(allNs).forEach(id=>assignSlots(id));
+
+  const maxSlotByOff={};
+  Object.keys(allNs).forEach(id=>{
+    const off=offsets[id],slot=slotOf[id]||0;
+    maxSlotByOff[off]=Math.max(maxSlotByOff[off]??0,slot);
+  });
+  const sortedOffs=Object.keys(maxSlotByOff).map(Number).sort((a,b)=>a-b);
+  const dateX={};
   const groupBounds={};
   let curX=TIME_BASE_X;
-
   sortedOffs.forEach(off=>{
-    const ids=groups[off];
-    const subNs={};
-    ids.forEach(id=>{
-      const n=allNs[id];
-      if(!n)return;
-      const parentInGroup=n.parentId&&ids.has(n.parentId);
-      // null-out parent if it's in a different group → treated as local root
-      subNs[id]={...n,parentId:parentInGroup?n.parentId:null};
-    });
-
-    const subPos=calcLayout(subNs);
-    const xVals=Object.values(subPos).map(p=>p.x);
-    if(!xVals.length)return;
-
-    const minSubX=Math.min(...xVals);            // calcLayout roots start at x=52
-    const maxSubX=Math.max(...xVals)+NW;
-    const subW=maxSubX-minSubX;
-
-    // Shift so this group's leftmost card sits at curX
-    Object.entries(subPos).forEach(([id,p])=>{
-      pos[id]={x:curX+(p.x-minSubX), y:p.y};
-    });
-
-    groupBounds[off]={minX:curX, maxX:curX+subW};
-    curX+=subW+GROUP_GAP;
+    const width=(maxSlotByOff[off]||0)*TIME_NODE_STEP+NW;
+    dateX[off]=curX;
+    groupBounds[off]={minX:curX,maxX:curX+width};
+    curX+=width+GROUP_GAP;
   });
 
-  /* Post-process: align cross-group entries to their parent's Y.
-     For each date group we collect all "cross-group roots" (nodes whose
-     parent lives in an earlier group), sort them by parent.y, and shift
-     each one's sub-tree independently so it lines up with its parent.
-     A small floor prevents sub-trees from overlapping even when many
-     chains land on the same date column. */
-  sortedOffs.forEach(off=>{
-    const ids=[...groups[off]];
+  let naturalLaneY=TIME_LANE_BASE_Y;
+  const rawLanes=roots.map((root,idx)=>{
+    const rows=(rowMaxByRoot[root.id]??0)+1;
+    const height=(rows-1)*SL+NH;
+    const naturalY=naturalLaneY;
+    naturalLaneY+=height+TIME_PROJECT_GAP;
+    return{rootId:root.id,rawY:naturalY+(laneOffsets[root.id]||0),height,idx};
+  });
 
-    // Build descendant set for a node, staying within this date group
-    const subtreeOf=rootId=>{
-      const set=new Set([rootId]);
-      const q=[rootId];
-      while(q.length){
-        const pid=q.shift();
-        ids.forEach(cid=>{
-          if(allNs[cid]?.parentId===pid&&!set.has(cid)){set.add(cid);q.push(cid);}
-        });
-      }
-      return set;
+  const laneY={};
+  const laneBounds={};
+  let floorY=TIME_LANE_BASE_Y;
+  rawLanes.forEach(lane=>{
+    const y=Math.max(lane.rawY,floorY);
+    laneY[lane.rootId]=y;
+    laneBounds[lane.rootId]={top:y,bottom:y+lane.height};
+    floorY=y+lane.height+TIME_PROJECT_GAP;
+  });
+
+  const pos={};
+  Object.keys(allNs).forEach(id=>{
+    const root=rootOf[id];
+    const off=offsets[id];
+    pos[id]={
+      x:(dateX[off]??TIME_BASE_X)+(slotOf[id]||0)*TIME_NODE_STEP,
+      y:(laneY[root]??TIME_LANE_BASE_Y)+(rowOf[id]||0)*SL
     };
-
-    // cross-group roots: parent exists and lives in a DIFFERENT date group
-    const crossRoots=ids.filter(id=>{
-      const n=allNs[id];
-      return n?.parentId&&offsets[n.parentId]!==off&&pos[n.parentId]!==undefined;
-    });
-    if(!crossRoots.length)return;
-
-    // Sort top-to-bottom by parent's Y so we process chains in visual order
-    crossRoots.sort((a,b)=>(pos[allNs[a].parentId]?.y??0)-(pos[allNs[b].parentId]?.y??0));
-
-    let floorY=-Infinity; // bottom edge of the last placed sub-tree
-    crossRoots.forEach(rootId=>{
-      const tree=subtreeOf(rootId);
-      const rootCurY=pos[rootId]?.y??0;
-      const parentY=pos[allNs[rootId].parentId]?.y??0;
-      // Prefer exact parent alignment; push down only if previous sub-tree would overlap
-      const targetY=floorY===-Infinity?parentY:Math.max(parentY,floorY+VG);
-      const dy=targetY-rootCurY;
-      if(dy!==0)tree.forEach(id=>{if(pos[id])pos[id]={...pos[id],y:pos[id].y+dy};});
-      const bottom=Math.max(...[...tree].map(id=>(pos[id]?.y??0)+NH));
-      floorY=Math.max(floorY,bottom);
-    });
   });
 
-  return{pos,offsets,groupBounds};
+  return{pos,offsets,groupBounds,rootOf,laneBounds};
 }
 
 /* ── AI workflow text parser ── */
@@ -1007,6 +1010,7 @@ function App(){
     n1:{id:'n1',title:'My First Project',parentId:null,status:'active',createdAt:now(),color:'blue'}
   });
   const [manPos,setManPos]=useState(_saved?.manPos||{});
+  const [laneOffsets,setLaneOffsets]=useState(_saved?.laneOffsets||{});
   const [inputs,setInputs]=useState({});
   const [selRoot,setSelRoot]=useState(_saved?.selRoot||'n1');
   const [pan,setPan]=useState(_saved?.pan||{x:90,y:70});
@@ -1120,16 +1124,18 @@ function App(){
   const saveSnap=useCallback(()=>{
     const snap={
       nodes:JSON.parse(JSON.stringify(nodes)),
-      manPos:{...manPos}
+      manPos:{...manPos},
+      laneOffsets:{...laneOffsets}
     };
     histSnaps.current=[...histSnaps.current.slice(-40),snap];
-  },[nodes,manPos]);
+  },[nodes,manPos,laneOffsets]);
   const undo=useCallback(()=>{
     if(!histSnaps.current.length)return;
     const prev=histSnaps.current[histSnaps.current.length-1];
     histSnaps.current=histSnaps.current.slice(0,-1);
     setNodes(prev.nodes);
     setManPos(prev.manPos);
+    setLaneOffsets(prev.laneOffsets||{});
   },[]);
   const [histLen,setHistLen]=useState(0);
 
@@ -1137,7 +1143,7 @@ function App(){
   useEffect(()=>{
     // We update histLen whenever nodes or manPos change so the button re-renders
     setHistLen(histSnaps.current.length);
-  },[nodes,manPos]);
+  },[nodes,manPos,laneOffsets]);
 
   /* Keyboard undo Ctrl+Z */
   useEffect(()=>{
@@ -1176,6 +1182,7 @@ function App(){
       return upd;
     });
     setManPos(p=>{const n={...p};deleteConfirm.ids.forEach(id=>delete n[id]);return n;});
+    setLaneOffsets(p=>{const n={...p};deleteConfirm.ids.forEach(id=>delete n[id]);return n;});
     setSelIds(new Set());
     setDeleteConfirm(null);
   },[deleteConfirm,saveSnap]);
@@ -1214,7 +1221,9 @@ function App(){
   const panXYRef=useRef({x:0,y:0});
   const scaleRef=useRef(1);
   const manPosRef=useRef({});
+  const laneOffsetsRef=useRef({});
   const posRef=useRef({});
+  const rootOfRef=useRef({});
   const cvRef=useRef(null);
   const saveTimer=useRef(null);
   const cloudTimer=useRef(null);
@@ -1224,6 +1233,7 @@ function App(){
 
   useEffect(()=>{scaleRef.current=scale;},[scale]);
   useEffect(()=>{manPosRef.current=manPos;},[manPos]);
+  useEffect(()=>{laneOffsetsRef.current=laneOffsets;},[laneOffsets]);
   useEffect(()=>{timeViewRef.current=timeView;},[timeView]);
   useEffect(()=>{panXYRef.current=pan;},[pan]);
 
@@ -1232,11 +1242,11 @@ function App(){
     clearTimeout(saveTimer.current);
     saveTimer.current=setTimeout(()=>{
       try{
-        localStorage.setItem(SAVE_KEY,JSON.stringify({nodes,manPos,selRoot,pan,scale,timeView}));
+        localStorage.setItem(SAVE_KEY,JSON.stringify({nodes,manPos,laneOffsets,selRoot,pan,scale,timeView}));
         setSavedFlash(true);setTimeout(()=>setSavedFlash(false),1800);
       }catch{}
     },800);
-  },[nodes,manPos,selRoot,pan,scale,timeView]);
+  },[nodes,manPos,laneOffsets,selRoot,pan,scale,timeView]);
 
   useEffect(()=>{
     if(!session)return;
@@ -1246,6 +1256,7 @@ function App(){
       const ws=data.workspace?.data;
       if(ws?.nodes)setNodes(ws.nodes);
       if(ws?.manPos)setManPos(ws.manPos);
+      if(ws?.laneOffsets)setLaneOffsets(ws.laneOffsets);
       if(ws?.selRoot)setSelRoot(ws.selRoot);
       if(ws?.pan)setPan(ws.pan);
       if(ws?.scale)setScale(ws.scale);
@@ -1260,11 +1271,11 @@ function App(){
     clearTimeout(cloudTimer.current);
     cloudTimer.current=setTimeout(()=>{
       setCloudStatus('syncing');
-      apiCall('workspace',{method:'PUT',body:{data:{nodes,manPos,selRoot,pan,scale,timeView},title:'Project Flow Workspace'}})
+      apiCall('workspace',{method:'PUT',body:{data:{nodes,manPos,laneOffsets,selRoot,pan,scale,timeView},title:'Project Flow Workspace'}})
         .then(()=>setCloudStatus('ok'))
         .catch(()=>setCloudStatus('error'));
     },1800);
-  },[nodes,manPos,selRoot,pan,scale,timeView,session?.user?.id]);
+  },[nodes,manPos,laneOffsets,selRoot,pan,scale,timeView,session?.user?.id]);
 
   /* Load from Gist */
   useEffect(()=>{
@@ -1278,6 +1289,7 @@ function App(){
       });
       if(data.nodes)setNodes(data.nodes);
       if(data.manPos)setManPos(data.manPos);
+      if(data.laneOffsets)setLaneOffsets(data.laneOffsets);
       if(data.selRoot)setSelRoot(data.selRoot);
       setGhStatus('ok');
     }).catch(()=>setGhStatus('error'));
@@ -1289,17 +1301,17 @@ function App(){
     clearTimeout(gistTimerRef.current);
     gistTimerRef.current=setTimeout(()=>{
       setGhStatus('syncing');
-      gistSave(ghToken,gistId,{nodes,manPos,selRoot})
+      gistSave(ghToken,gistId,{nodes,manPos,laneOffsets,selRoot})
         .then(()=>setGhStatus('ok'))
         .catch(()=>setGhStatus('error'));
     },4000);
-  },[nodes,manPos,selRoot,ghToken,gistId]);
+  },[nodes,manPos,laneOffsets,selRoot,ghToken,gistId]);
 
   const connectGist=async()=>{
     setModalErr('');setModalLoading(true);
     try{
       const user=await verifyToken(tokenInput.trim());
-      const g=await gistSave(tokenInput.trim(),null,{nodes,manPos,selRoot});
+      const g=await gistSave(tokenInput.trim(),null,{nodes,manPos,laneOffsets,selRoot});
       const newToken=tokenInput.trim(),newGistId=g.id;
       localStorage.setItem(GH_TOKEN_KEY,newToken);localStorage.setItem(GH_GIST_KEY,newGistId);
       localStorage.setItem('pf_gh_user',JSON.stringify({login:user.login,avatar:user.avatar_url}));
@@ -1326,18 +1338,19 @@ function App(){
 
   /* lpos: in time view returns {pos,offsets}, in tree view returns flat {id->pos} map */
   const lposResult=useMemo(()=>
-    timeView?calcTimeLayout(allNs,nodes):null
-  ,[allNs,timeView,nodes]);
+    timeView?calcTimeLayout(allNs,nodes,laneOffsets):null
+  ,[allNs,timeView,nodes,laneOffsets]);
   const lpos=useMemo(()=>
     timeView?(lposResult?.pos||{}):calcLayout(allNs)
   ,[allNs,timeView,lposResult]);
   const timeOffsets=lposResult?.offsets||{};  // day offsets per node in time view
 
   useEffect(()=>{posRef.current=lpos;},[lpos]);
+  useEffect(()=>{rootOfRef.current=lposResult?.rootOf||{};},[lposResult]);
 
-  /* getPos: manPos overrides lpos in both tree and time view.
-     (In time view, lpos is tree-layout so positions feel natural either way.) */
-  const getPos=useCallback(id=>manPos[id]||lpos[id],[manPos,lpos]);
+  /* In time view, date columns own X and project lanes own Y.
+     Tree view keeps the older freeform node positions. */
+  const getPos=useCallback(id=>timeView?lpos[id]:(manPos[id]||lpos[id]),[timeView,manPos,lpos]);
 
   const roots=useMemo(()=>Object.values(nodes).filter(n=>!n.parentId),[nodes]);
 
@@ -1441,9 +1454,9 @@ function App(){
 
   const autoArrange=()=>{
     setArranging(true);
-    // Clear all manual positions — in time view this resets Y stacking;
-    // X is always deadline-controlled so it resets automatically via lpos.
+    // Clear tree-view node positions and time-view project lane offsets.
     setManPos({});
+    setLaneOffsets({});
     setTimeout(()=>setArranging(false),520);
   };
 
@@ -1457,6 +1470,7 @@ function App(){
       return upd;
     });
     setManPos(p=>{const n={...p};delete n[id];return n;});
+    setLaneOffsets(p=>{const n={...p};delete n[id];return n;});
     setInputs(p=>{const cl={...p};Object.entries(cl).forEach(([tid,inp])=>{if(inp.parentId===id)delete cl[tid];});return cl;});
   };
 
@@ -1483,9 +1497,17 @@ function App(){
   const startNodeDrag=(e,nodeId)=>{
     if(e.button!==0)return;
     e.stopPropagation();
-    const p=manPosRef.current[nodeId]||posRef.current[nodeId];
+    const p=timeViewRef.current?posRef.current[nodeId]:(manPosRef.current[nodeId]||posRef.current[nodeId]);
     if(!p)return;
-    dragRef.current={nodeId,mouseX:e.clientX,mouseY:e.clientY,nodeX:p.x,nodeY:p.y,snapped:false};
+    const rootId=timeViewRef.current?(rootOfRef.current[nodeId]||nodeId):null;
+    dragRef.current={
+      nodeId,rootId,
+      mode:timeViewRef.current?'lane':'node',
+      mouseX:e.clientX,mouseY:e.clientY,
+      nodeX:p.x,nodeY:p.y,
+      startOffset:rootId?(laneOffsetsRef.current[rootId]||0):0,
+      snapped:false
+    };
     setDragId(nodeId);
   };
 
@@ -1511,11 +1533,15 @@ function App(){
       lastXY.current={x:e.clientX,y:e.clientY};
     }
     if(dragRef.current){
-      const{nodeId,mouseX,mouseY,nodeX,nodeY}=dragRef.current;
+      const{nodeId,rootId,mode,mouseX,mouseY,nodeX,nodeY,startOffset}=dragRef.current;
       if(!dragRef.current.snapped){saveSnap();dragRef.current.snapped=true;}
       const s=scaleRef.current;
       const dx=(e.clientX-mouseX)/s,dy=(e.clientY-mouseY)/s;
-      setManPos(p=>({...p,[nodeId]:{x:nodeX+dx,y:nodeY+dy}}));
+      if(mode==='lane'&&rootId){
+        setLaneOffsets(p=>({...p,[rootId]:startOffset+dy}));
+      }else{
+        setManPos(p=>({...p,[nodeId]:{x:nodeX+dx,y:nodeY+dy}}));
+      }
     }
     if(selBoxRef.current&&!dragRef.current){
       const r=cvRef.current?.getBoundingClientRect();if(!r)return;
@@ -1530,12 +1556,19 @@ function App(){
   const GRID=24;
   const onMU=useCallback(e=>{
     if(dragRef.current){
-      const{nodeId,mouseX,mouseY}=dragRef.current;
+      const{nodeId,rootId,mode,mouseX,mouseY}=dragRef.current;
       const moved=Math.abs(e.clientX-mouseX)>6||Math.abs(e.clientY-mouseY)>6;
-      setManPos(p=>{
-        const cur=p[nodeId];if(!cur)return p;
-        return{...p,[nodeId]:{x:Math.round(cur.x/GRID)*GRID,y:Math.round(cur.y/GRID)*GRID}};
-      });
+      if(mode==='lane'&&rootId){
+        setLaneOffsets(p=>{
+          if(p[rootId]===undefined)return p;
+          return{...p,[rootId]:Math.round(p[rootId]/GRID)*GRID};
+        });
+      }else{
+        setManPos(p=>{
+          const cur=p[nodeId];if(!cur)return p;
+          return{...p,[nodeId]:{x:Math.round(cur.x/GRID)*GRID,y:Math.round(cur.y/GRID)*GRID}};
+        });
+      }
       if(!moved){
         // Click on node (no drag) → select it
         setSelIds(prev=>{
@@ -1560,7 +1593,7 @@ function App(){
         // Just re-compute here synchronously using current posRef
         const ids=new Set();
         Object.keys(posRef.current).forEach(id=>{
-          const p=manPosRef.current[id]||posRef.current[id];
+          const p=timeViewRef.current?posRef.current[id]:(manPosRef.current[id]||posRef.current[id]);
           if(!p)return;
           if(p.x>=minX&&p.x+NW<=maxX&&p.y>=minY&&p.y+NH<=maxY)ids.add(id);
         });
@@ -1617,16 +1650,16 @@ function App(){
     const maxY=Math.max(selBox.y1,selBox.y2);
     const ids=new Set();
     Object.keys(allNs).forEach(id=>{
-      const p=manPos[id]||lpos[id];
+      const p=timeView?lpos[id]:(manPos[id]||lpos[id]);
       if(!p)return;
       if(p.x>=minX&&p.x+NW<=maxX&&p.y>=minY&&p.y+NH<=maxY)ids.add(id);
     });
     return ids;
-  },[selBox,allNs,manPos,lpos,selIds]);
+  },[selBox,allNs,timeView,manPos,lpos,selIds]);
 
   /* SVG lines — inline gp avoids stale closure on getPos */
   const lines=useMemo(()=>{
-    const gp=id=>manPos[id]||lpos[id];
+    const gp=id=>timeView?lpos[id]:(manPos[id]||lpos[id]);
     return Object.values(allNs)
       .filter(n=>n.parentId&&gp(n.id)&&gp(n.parentId))
       .map(n=>{
@@ -1636,7 +1669,7 @@ function App(){
           x1:pa.x+NW,y1:pa.y+NH/2,x2:ch.x,y2:ch.y+NH/2,
           done:n.status==='done',ghost:n.status==='ghost',col};
       });
-  },[allNs,manPos,lpos,nodes]);
+  },[allNs,timeView,manPos,lpos,nodes]);
 
   // Canvas virtual size: enough to fit all positioned nodes
   const allPts=Object.keys(allNs).map(id=>getPos(id)).filter(Boolean);
