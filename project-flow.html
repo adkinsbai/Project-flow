@@ -86,24 +86,25 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
 
 /* ── Time ruler ── */
 .time-ruler{
-  height:52px;flex-shrink:0;position:relative;
+  height:68px;flex-shrink:0;position:relative;
   background:rgba(13,17,23,.97);border-bottom:1px solid var(--dim);
   overflow:hidden;backdrop-filter:blur(12px);}
 .tr-col{
   position:absolute;top:0;bottom:0;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
+  display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:3px;
+  padding-top:26px;
   border-right:1px solid rgba(255,255,255,.04);
   transition:background .2s;}
 .tr-col.past{opacity:.5}
 .tr-col.today{background:rgba(56,139,253,.1);border-right:1px solid rgba(56,139,253,.18)}
 .tr-today-badge{
-  position:absolute;top:3px;
+  position:absolute;top:6px;
   background:#388bfd;color:#fff;font-size:9px;font-weight:700;
-  padding:1px 6px;border-radius:10px;letter-spacing:.04em}
-.tr-date{font-size:13.5px;font-weight:700;color:var(--tx)}
+  padding:1px 6px;border-radius:10px;letter-spacing:.04em;line-height:13px}
+.tr-date{font-size:13.5px;font-weight:700;color:var(--tx);line-height:16px}
 .tr-col.today .tr-date{color:#58a6ff}
 .tr-col.past .tr-date{color:var(--mu)}
-.tr-week{font-size:10px;color:var(--su)}
+.tr-week{font-size:10px;color:var(--su);line-height:12px}
 .tr-col.today .tr-week{color:#388bfd80}
 
 /* ── Today column in canvas ── */
