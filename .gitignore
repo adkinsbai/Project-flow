@@ -5,3 +5,7 @@ config.js
 .env
 
 .vercel
+node_modules/
+release/
+dist/
+*.log

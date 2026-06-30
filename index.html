@@ -438,6 +438,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
 .license-row{display:flex;gap:8px;margin-top:12px}
 .license-row input{flex:1;height:38px;border-radius:8px;border:1px solid #30363d;background:#0d1117;color:#e6edf3;
   padding:0 12px;font-size:13px;outline:none;font-family:monospace}
+.desktop-panel{width:560px}
+.desktop-panel h3{font-size:13px;color:#e6edf3;margin:16px 0 8px}
+.desktop-list{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.desktop-row{display:flex;justify-content:space-between;gap:12px;background:#0d1117;border:1px solid #21262d;border-radius:8px;padding:9px 10px;font-size:12px;color:#c9d1d9}
+.desktop-row span:last-child{color:#8b949e;text-align:right}
+.desktop-textarea{width:100%;min-height:96px;background:#0d1117;border:1px solid #30363d;border-radius:8px;color:#e6edf3;padding:10px 12px;font-size:13px;outline:none;resize:vertical}
+.desktop-empty{font-size:12px;color:#8b949e;background:#0d1117;border:1px dashed #30363d;border-radius:8px;padding:12px;margin-top:10px}
 .guide-modal{width:860px;max-width:94vw;padding:0;overflow:hidden}
 .guide-head{display:flex;justify-content:space-between;gap:12px;padding:20px 22px;border-bottom:1px solid #21262d}
 .guide-title{font-size:17px;font-weight:800;color:#e6edf3}
@@ -990,6 +997,11 @@ function App(){
   const [licenseBusy,setLicenseBusy]=useState(false);
   const [licenseErr,setLicenseErr]=useState('');
   const [cloudStatus,setCloudStatus]=useState('local');
+  const [desktopPanel,setDesktopPanel]=useState(null);
+  const [desktopVersion,setDesktopVersion]=useState('1.0.0');
+  const [desktopMic,setDesktopMic]=useState('系统默认麦克风');
+  const [dictInput,setDictInput]=useState('');
+  const [dictionaryTerms,setDictionaryTerms]=useState(()=>{try{return JSON.parse(localStorage.getItem('pf_dictionary_terms')||'[]');}catch{return[];}});
   const [nodes,setNodes]=useState(_saved?.nodes||{
     n1:{id:'n1',title:'My First Project',parentId:null,status:'active',createdAt:now(),color:'blue'}
   });
@@ -1031,14 +1043,28 @@ function App(){
 
   useEffect(()=>{if(session)refreshMe().catch(e=>setAuthErr(e.message));},[session,refreshMe]);
 
+  useEffect(()=>{
+    const desktop=window.projectFlowDesktop;
+    if(!desktop)return;
+    desktop.getVersion?.().then(v=>v&&setDesktopVersion(v)).catch(()=>{});
+    const offPanel=desktop.onOpenPanel?.(panel=>setDesktopPanel(panel));
+    const offMic=desktop.onMicrophone?.(device=>{setDesktopMic(device==='default'?'系统默认麦克风':device);setDesktopPanel('microphone');});
+    return()=>{offPanel?.();offMic?.();};
+  },[]);
+
   const submitAuth=async({email,password})=>{
     if(!supabaseClient){setAuthErr('还没有配置 Supabase，先看 README 里的部署步骤。');return;}
     setAuthErr('');setAuthBusy(true);
     try{
       const fn=authMode==='login'?supabaseClient.auth.signInWithPassword:supabaseClient.auth.signUp;
-      const {error}=await fn.call(supabaseClient.auth,{email,password});
+      const {data,error}=await fn.call(supabaseClient.auth,{email,password});
       if(error)throw error;
-      if(authMode==='signup')setAuthErr('注册成功。如果 Supabase 开启了邮箱确认，请先去邮箱完成验证。');
+      if(data?.session){
+        setSession(data.session);
+        setAuthMode('login');
+      }else if(authMode==='signup'){
+        setAuthErr('注册成功。如果 Supabase 开启了邮箱确认，请先去邮箱完成验证。');
+      }
     }catch(e){setAuthErr(e.message||'登录失败');}
     setAuthBusy(false);
   };
@@ -1075,6 +1101,17 @@ function App(){
       await refreshMe();
     }catch(e){setLicenseErr(e.message||'激活失败');}
     setLicenseBusy(false);
+  };
+
+  const addDictionaryTerm=()=>{
+    const term=dictInput.trim();
+    if(!term)return;
+    setDictionaryTerms(prev=>{
+      const next=[term,...prev.filter(x=>x!==term)].slice(0,60);
+      localStorage.setItem('pf_dictionary_terms',JSON.stringify(next));
+      return next;
+    });
+    setDictInput('');
   };
 
   /* Undo history */
@@ -1812,6 +1849,25 @@ function App(){
           onClose={()=>{setGuideOpen(false);setGuideAuto(false);}}
           onFinish={finishGuide}/>
       )}
+      {desktopPanel&&(
+        <DesktopPanel
+          panel={desktopPanel}
+          version={desktopVersion}
+          user={currentUser}
+          nodes={nodes}
+          histLen={histLen}
+          cloudStatus={cloudStatus}
+          ghStatus={ghStatus}
+          mic={desktopMic}
+          dictInput={dictInput}
+          setDictInput={setDictInput}
+          dictionaryTerms={dictionaryTerms}
+          onAddDictionaryTerm={addDictionaryTerm}
+          onClose={()=>setDesktopPanel(null)}
+          onGuide={()=>{setGuideAuto(false);setGuideOpen(true);setDesktopPanel(null);}}
+          onAccount={()=>{setAccountOpen(true);setDesktopPanel(null);}}
+          onGist={()=>{setShowGhModal(true);setDesktopPanel(null);}}/>
+      )}
 
       {/* ── Delete confirmation dialog ── */}
       {deleteConfirm&&(
@@ -1954,6 +2010,70 @@ function AccountModal({user,bundle,licenseKey,setLicenseKey,licenseBusy,licenseE
         <div className="mp-actions">
           <button className="btn btn-ghost" onClick={onClose}>关闭</button>
           <button className="btn" style={{background:'#5c1a1a',color:'#f85149',border:'1px solid #7d2626'}} onClick={onSignOut}>退出登录</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DesktopPanel({panel,version,user,nodes,histLen,cloudStatus,ghStatus,mic,dictInput,setDictInput,dictionaryTerms,onAddDictionaryTerm,onClose,onGuide,onAccount,onGist}){
+  const nodeList=Object.values(nodes).sort((a,b)=>(b.completedAt||b.createdAt)-(a.completedAt||a.createdAt)).slice(0,8);
+  const titleMap={
+    feedback:'反馈意见',
+    history:'历史记录',
+    dictionary:'添加到词典',
+    settings:'设置',
+    microphone:'选择麦克风',
+    updates:'检查更新'
+  };
+  return(
+    <div className="mo" onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
+      <div className="mp desktop-panel">
+        <h2>{titleMap[panel]||'Project Flow'}</h2>
+        {panel==='feedback'&&<>
+          <p>把你遇到的问题、建议或想要的功能先记在这里。企业邮箱接入后，这里会改成直接提交到反馈后台。</p>
+          <textarea className="desktop-textarea" placeholder="写下反馈意见..." />
+        </>}
+        {panel==='history'&&<>
+          <p>这里展示最近的节点变化和当前撤销栈。完整操作审计会在桌面本地数据层升级后补上。</p>
+          <div className="desktop-row"><span>可撤销步骤</span><span>{histLen}</span></div>
+          <div className="desktop-list">
+            {nodeList.map(n=><div className="desktop-row" key={n.id}><span>{n.title}</span><span>{n.status==='done'?'已完成':'进行中'}</span></div>)}
+            {!nodeList.length&&<div className="desktop-empty">还没有历史记录。</div>}
+          </div>
+        </>}
+        {panel==='dictionary'&&<>
+          <p>先把专有名词存到本地词典里。后续接入语音输入/AI 解析时，会优先识别这些词。</p>
+          <div className="license-row">
+            <input value={dictInput} onChange={e=>setDictInput(e.target.value)} onKeyDown={e=>e.key==='Enter'&&onAddDictionaryTerm()} placeholder="输入词汇，例如 Project Flow"/>
+            <button className="btn btn-green" onClick={onAddDictionaryTerm}>添加</button>
+          </div>
+          <div className="desktop-list">
+            {dictionaryTerms.map(t=><div className="desktop-row" key={t}><span>{t}</span><span>本地词典</span></div>)}
+            {!dictionaryTerms.length&&<div className="desktop-empty">还没有添加词汇。</div>}
+          </div>
+        </>}
+        {panel==='settings'&&<>
+          <p>桌面版会最小化到系统托盘。账号和会员状态走 Supabase，本地工作流会保存在本机并同步到云端工作区。</p>
+          <div className="desktop-list">
+            <div className="desktop-row"><span>账号</span><span>{user?.email||'未登录'}</span></div>
+            <div className="desktop-row"><span>云同步</span><span>{cloudStatus}</span></div>
+            <div className="desktop-row"><span>Gist 同步</span><span>{ghStatus}</span></div>
+          </div>
+        </>}
+        {panel==='microphone'&&<>
+          <p>当前版本先保留麦克风入口。真正的语音录入和设备枚举需要下一步接入 Windows 原生权限。</p>
+          <div className="desktop-row"><span>当前选择</span><span>{mic}</span></div>
+        </>}
+        {panel==='updates'&&<>
+          <p>当前版本已经是本地安装包版本。自动更新通道会在推广前接入。</p>
+          <div className="desktop-row"><span>版本</span><span>{version}</span></div>
+        </>}
+        <div className="mp-actions">
+          <button className="btn btn-ghost" onClick={onGuide}>使用指南</button>
+          <button className="btn btn-ghost" onClick={onGist}>同步设置</button>
+          <button className="btn btn-ghost" onClick={onAccount}>账户</button>
+          <button className="btn btn-green" onClick={onClose}>关闭</button>
         </div>
       </div>
     </div>

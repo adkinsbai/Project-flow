@@ -1,0 +1,40 @@
+{
+  "name": "project-flow",
+  "version": "1.0.0",
+  "description": "Project Flow desktop and web app",
+  "main": "desktop/main.cjs",
+  "scripts": {
+    "desktop": "electron .",
+    "pack:win": "electron-builder --win portable",
+    "dist:win": "electron-builder --win nsis,portable"
+  },
+  "build": {
+    "appId": "com.projectflow.app",
+    "productName": "Project Flow",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "index.html",
+      "project-flow.html",
+      "config.example.js",
+      "desktop/**/*"
+    ],
+    "win": {
+      "target": [
+        "portable"
+      ],
+      "artifactName": "Project-Flow-${version}-${arch}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
+  },
+  "devDependencies": {
+    "electron": "^31.7.7",
+    "electron-builder": "^24.13.3"
+  }
+}
