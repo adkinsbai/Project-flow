@@ -1,0 +1,422 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Project Flow | AI-ready Project Timeline</title>
+  <meta name="description" content="Project Flow 是一款面向个人创作者和小团队的可视化项目流管理工具，帮助你把复杂项目拆成清晰分支、日期线和完成标记。">
+  <style>
+    :root{
+      --ink:#0f172a;
+      --paper:#f7fbff;
+      --mint:#00b8a9;
+    }
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{
+      margin:0;
+      font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",sans-serif;
+      color:var(--ink);
+      background:var(--paper);
+      line-height:1.6;
+      overflow-x:hidden;
+    }
+    a{color:inherit;text-decoration:none}
+    button,a{touch-action:manipulation}
+    .page{
+      min-height:100vh;
+      position:relative;
+      isolation:isolate;
+      background:
+        linear-gradient(rgba(15,23,42,.045) 1px,transparent 1px),
+        linear-gradient(90deg,rgba(15,23,42,.045) 1px,transparent 1px),
+        var(--paper);
+      background-size:34px 34px;
+    }
+    .page::before{
+      content:"";
+      position:absolute;
+      inset:0;
+      z-index:-1;
+      background:
+        radial-gradient(circle at 50% 24%,rgba(0,184,169,.16),transparent 34%),
+        linear-gradient(180deg,rgba(247,251,255,.72),rgba(247,251,255,1) 58%);
+      pointer-events:none;
+    }
+    .nav{
+      position:sticky;
+      top:0;
+      z-index:20;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:24px;
+      width:min(1180px,calc(100% - 40px));
+      margin:0 auto;
+      padding:18px 0;
+      backdrop-filter:blur(16px);
+    }
+    .brand{display:flex;align-items:center;gap:11px;font-weight:800;letter-spacing:-.03em}
+    .mark{
+      width:28px;height:28px;border:2px solid var(--ink);border-radius:8px;
+      display:grid;place-items:center;position:relative;background:var(--paper);
+    }
+    .mark::after{content:"";width:10px;height:10px;border-radius:50%;background:var(--mint)}
+    .links{display:flex;align-items:center;gap:22px;font-size:14px;font-weight:650}
+    .links a{opacity:.72}
+    .links a:hover{opacity:1;color:var(--mint)}
+    .btn{
+      min-height:44px;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:10px;
+      border:1px solid var(--ink);
+      border-radius:999px;
+      padding:12px 18px;
+      font-weight:800;
+      transition:transform .18s ease,background .18s ease,color .18s ease,border-color .18s ease;
+    }
+    .btn:hover{transform:translateY(-2px)}
+    .btn.primary{background:var(--ink);color:var(--paper)}
+    .btn.primary:hover{background:var(--mint);border-color:var(--mint);color:var(--ink)}
+    .btn.ghost{background:rgba(247,251,255,.72)}
+    .btn.ghost:hover{border-color:var(--mint);color:var(--mint)}
+    .hero{
+      width:min(1180px,calc(100% - 40px));
+      margin:0 auto;
+      min-height:calc(100svh - 80px);
+      display:grid;
+      grid-template-columns:minmax(0,1fr) minmax(360px,520px);
+      gap:54px;
+      align-items:center;
+      padding:56px 0 88px;
+    }
+    .eyebrow{
+      display:inline-flex;
+      align-items:center;
+      gap:10px;
+      border:1px solid rgba(15,23,42,.18);
+      border-radius:999px;
+      padding:7px 12px;
+      background:rgba(247,251,255,.8);
+      font-size:13px;
+      font-weight:750;
+    }
+    .pulse{width:8px;height:8px;border-radius:50%;background:var(--mint);box-shadow:0 0 0 7px rgba(0,184,169,.15)}
+    h1{
+      margin:20px 0 18px;
+      font-size:clamp(48px,8vw,108px);
+      line-height:.9;
+      letter-spacing:0;
+      max-width:860px;
+    }
+    .lead{
+      margin:0;
+      max-width:680px;
+      font-size:clamp(17px,2vw,22px);
+      color:rgba(15,23,42,.74);
+    }
+    .hero-actions{display:flex;flex-wrap:wrap;gap:14px;margin-top:32px}
+    .meta{
+      display:grid;
+      grid-template-columns:repeat(3,minmax(0,1fr));
+      gap:12px;
+      margin-top:38px;
+      max-width:650px;
+    }
+    .metric{
+      border-top:2px solid var(--ink);
+      padding-top:13px;
+      min-width:0;
+    }
+    .metric strong{display:block;font-size:25px;letter-spacing:0}
+    .metric span{display:block;font-size:13px;color:rgba(15,23,42,.68)}
+    .product{
+      position:relative;
+      min-height:590px;
+      border:1px solid rgba(15,23,42,.15);
+      border-radius:8px;
+      background:rgba(247,251,255,.86);
+      box-shadow:0 28px 90px rgba(15,23,42,.12);
+      overflow:hidden;
+    }
+    .product::before{
+      content:"";
+      position:absolute;
+      inset:0;
+      background:
+        linear-gradient(rgba(15,23,42,.055) 1px,transparent 1px),
+        linear-gradient(90deg,rgba(15,23,42,.055) 1px,transparent 1px);
+      background-size:30px 30px;
+    }
+    .product-top{
+      position:relative;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding:15px;
+      border-bottom:1px solid rgba(15,23,42,.13);
+      font-size:13px;
+      font-weight:800;
+    }
+    .dots{display:flex;gap:7px}
+    .dots i{width:9px;height:9px;border-radius:50%;background:var(--ink);opacity:.23}
+    .ruler{
+      position:absolute;
+      top:54px;
+      left:0;
+      right:0;
+      height:70px;
+      display:grid;
+      grid-template-columns:repeat(5,1fr);
+      border-bottom:1px solid rgba(15,23,42,.13);
+    }
+    .day{
+      padding:12px 14px;
+      border-right:1px solid rgba(15,23,42,.1);
+      color:rgba(15,23,42,.54);
+      font-size:12px;
+      font-weight:750;
+    }
+    .day.today{background:rgba(0,184,169,.11);color:var(--ink)}
+    .flow-card{
+      position:absolute;
+      width:210px;
+      min-height:104px;
+      border:1px solid rgba(15,23,42,.18);
+      border-radius:8px;
+      background:var(--paper);
+      padding:14px;
+      box-shadow:0 14px 40px rgba(15,23,42,.1);
+      animation:float 7s ease-in-out infinite;
+    }
+    .flow-card:nth-of-type(1){left:38px;top:162px}
+    .flow-card:nth-of-type(2){left:218px;top:286px;animation-delay:-1.7s}
+    .flow-card:nth-of-type(3){left:74px;top:420px;animation-delay:-3.1s}
+    .flow-card:nth-of-type(4){right:34px;top:202px;animation-delay:-2.4s}
+    .flow-card:nth-of-type(5){right:78px;top:390px;animation-delay:-4.1s}
+    .flow-card b{display:block;font-size:14px;margin-bottom:22px}
+    .flow-card span{display:flex;align-items:center;gap:8px;font-size:12px;color:rgba(15,23,42,.62);font-weight:700}
+    .node-dot{width:8px;height:8px;border-radius:50%;background:var(--mint)}
+    .connector{
+      position:absolute;
+      inset:124px 40px 76px;
+      pointer-events:none;
+    }
+    .connector path{fill:none;stroke:var(--mint);stroke-width:2;stroke-dasharray:7 9;animation:dash 18s linear infinite}
+    main section{
+      width:min(1180px,calc(100% - 40px));
+      margin:0 auto;
+      padding:88px 0;
+    }
+    .section-head{display:flex;align-items:flex-end;justify-content:space-between;gap:32px;margin-bottom:34px}
+    h2{margin:0;font-size:clamp(30px,4vw,54px);line-height:1;letter-spacing:0}
+    .section-head p{margin:0;max-width:490px;color:rgba(15,23,42,.68);font-size:17px}
+    .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+    .feature{
+      border:1px solid rgba(15,23,42,.14);
+      border-radius:8px;
+      padding:24px;
+      background:rgba(247,251,255,.72);
+      min-height:236px;
+    }
+    .feature small{display:block;color:var(--mint);font-weight:900;margin-bottom:36px;letter-spacing:0}
+    .feature h3{margin:0 0 12px;font-size:22px;line-height:1.15;letter-spacing:0}
+    .feature p{margin:0;color:rgba(15,23,42,.67)}
+    .download{
+      display:grid;
+      grid-template-columns:minmax(0,1fr) 330px;
+      gap:32px;
+      align-items:center;
+      border:1px solid rgba(15,23,42,.15);
+      border-radius:8px;
+      padding:38px;
+      background:var(--ink);
+      color:var(--paper);
+    }
+    .download h2{color:var(--paper)}
+    .download p{margin:16px 0 0;color:rgba(247,251,255,.76)}
+    .download-panel{
+      border:1px solid rgba(247,251,255,.18);
+      border-radius:8px;
+      padding:22px;
+      background:rgba(247,251,255,.06);
+    }
+    .version{font-size:13px;color:rgba(247,251,255,.68);margin-bottom:14px}
+    .download .btn.primary{width:100%;background:var(--paper);color:var(--ink);border-color:var(--paper)}
+    .download .btn.primary:hover{background:var(--mint);border-color:var(--mint)}
+    .download .btn.ghost{width:100%;margin-top:12px;background:transparent;color:var(--paper);border-color:rgba(247,251,255,.34)}
+    .download .btn.ghost:hover{border-color:var(--mint);color:var(--mint)}
+    .notes{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:18px;font-size:13px;color:rgba(247,251,255,.68)}
+    .note{border-top:1px solid rgba(247,251,255,.16);padding-top:12px}
+    footer{
+      width:min(1180px,calc(100% - 40px));
+      margin:0 auto;
+      padding:36px 0 52px;
+      border-top:1px solid rgba(15,23,42,.12);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:18px;
+      color:rgba(15,23,42,.62);
+      font-size:14px;
+    }
+    footer a{font-weight:800;color:var(--ink)}
+    @keyframes float{
+      0%,100%{transform:translateY(0)}
+      50%{transform:translateY(-10px)}
+    }
+    @keyframes dash{to{stroke-dashoffset:-260}}
+    @media (prefers-reduced-motion:reduce){
+      html{scroll-behavior:auto}
+      *,*::before,*::after{animation:none!important;transition:none!important}
+    }
+    @media (max-width:920px){
+      .links a:not(.btn){display:none}
+      .hero{grid-template-columns:1fr;gap:28px;padding-top:38px}
+      .product{min-height:520px}
+      .grid,.download{grid-template-columns:1fr}
+      .section-head{display:block}
+      .section-head p{margin-top:16px}
+    }
+    @media (max-width:620px){
+      .nav,.hero,main section,footer{width:min(100% - 28px,1180px)}
+      .nav{padding:14px 0}
+      .links .btn{padding:10px 13px;font-size:13px}
+      .meta{grid-template-columns:1fr}
+      .hero-actions .btn{width:100%}
+      .product{min-height:500px}
+      .flow-card{width:184px}
+      .flow-card:nth-of-type(1){left:14px;top:152px}
+      .flow-card:nth-of-type(2){left:auto;right:14px;top:255px}
+      .flow-card:nth-of-type(3){left:22px;top:372px}
+      .flow-card:nth-of-type(4),.flow-card:nth-of-type(5){display:none}
+      .download{padding:24px}
+      .notes{grid-template-columns:1fr}
+      footer{display:block}
+      footer div+div{margin-top:8px}
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <nav class="nav" aria-label="主导航">
+      <a class="brand" href="#top" aria-label="Project Flow 首页">
+        <span class="mark" aria-hidden="true"></span>
+        <span>Project Flow</span>
+      </a>
+      <div class="links">
+        <a href="#features">功能</a>
+        <a href="#download">下载</a>
+        <a class="btn ghost" href="https://project-flow-delta.vercel.app">打开 Web App</a>
+      </div>
+    </nav>
+
+    <header class="hero" id="top">
+      <div>
+        <div class="eyebrow"><span class="pulse" aria-hidden="true"></span> 30 天免费试用 · 9.9 元永久会员</div>
+        <h1>把项目推进变成一张会呼吸的时间线。</h1>
+        <p class="lead">Project Flow 帮你把复杂计划拆成可移动的节点、分支和完成标记。新建、Continue、平移、收尾都在一张画布里完成，适合个人创作者、创业项目和多线任务管理。</p>
+        <div class="hero-actions">
+          <a class="btn primary" href="#download">下载 Windows 版</a>
+          <a class="btn ghost" href="https://project-flow-delta.vercel.app">直接使用网页版</a>
+        </div>
+        <div class="meta" aria-label="产品信息">
+          <div class="metric"><strong>30d</strong><span>所有新用户免费试用</span></div>
+          <div class="metric"><strong>9.9</strong><span>永久会员解锁价格</span></div>
+          <div class="metric"><strong>Local + Cloud</strong><span>本地使用，账号同步</span></div>
+        </div>
+      </div>
+
+      <div class="product" aria-label="Project Flow 产品预览">
+        <div class="product-top">
+          <span>Project Flow Workspace</span>
+          <span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>
+        </div>
+        <div class="ruler" aria-hidden="true">
+          <div class="day">Jun 27</div>
+          <div class="day">Jun 28</div>
+          <div class="day today">Today</div>
+          <div class="day">Jul 01</div>
+          <div class="day">Jul 02</div>
+        </div>
+        <svg class="connector" viewBox="0 0 440 430" aria-hidden="true">
+          <path d="M65 68 C160 84 132 174 226 196 S344 246 348 322"></path>
+          <path d="M93 300 C164 260 244 112 364 96"></path>
+        </svg>
+        <div class="flow-card"><b>Setup project</b><span><i class="node-dot"></i>确认目标和边界</span></div>
+        <div class="flow-card"><b>Continue branch</b><span><i class="node-dot"></i>延展下一步行动</span></div>
+        <div class="flow-card"><b>Done marker</b><span><i class="node-dot"></i>完成后收尾归档</span></div>
+        <div class="flow-card"><b>Align today</b><span><i class="node-dot"></i>自动对齐今日列表</span></div>
+        <div class="flow-card"><b>Sync workspace</b><span><i class="node-dot"></i>账号登录后跨设备</span></div>
+      </div>
+    </header>
+
+    <main>
+      <section id="features">
+        <div class="section-head">
+          <h2>专为真实项目推进设计。</h2>
+          <p>不是又一个待办清单。Project Flow 更像一张可视化作战图，让任务、日期、分支和完成状态保持在同一个上下文里。</p>
+        </div>
+        <div class="grid">
+          <article class="feature">
+            <small>01</small>
+            <h3>时间线画布</h3>
+            <p>所有项目节点按日期展开，今日列表、Deadline 和状态变化会在同一张画布上呈现，减少来回切换。</p>
+          </article>
+          <article class="feature">
+            <small>02</small>
+            <h3>Continue 分支</h3>
+            <p>每一次 Continue 都代表项目向下一步推进。你可以保留不同分支，并通过平移让多组项目保持整齐。</p>
+          </article>
+          <article class="feature">
+            <small>03</small>
+            <h3>Done 收尾</h3>
+            <p>完成节点可以明确打上 Done 标记，让项目不只是开始，还能被清晰地结束、复盘和归档。</p>
+          </article>
+          <article class="feature">
+            <small>04</small>
+            <h3>账号和试用</h3>
+            <p>注册后自动进入 30 天免费试用。永久会员通过 Creem 支付与 License Key 激活，流程更适合正式发售。</p>
+          </article>
+          <article class="feature">
+            <small>05</small>
+            <h3>本地优先</h3>
+            <p>桌面版优先服务 Windows 本地使用场景；账号登录后可配合后端同步，兼顾私有数据和多设备访问。</p>
+          </article>
+          <article class="feature">
+            <small>06</small>
+            <h3>清爽无负担</h3>
+            <p>界面克制、操作直接，适合每天反复打开。你只需要关心项目下一步，而不是管理工具本身。</p>
+          </article>
+        </div>
+      </section>
+
+      <section id="download">
+        <div class="download">
+          <div>
+            <h2>下载 Project Flow for Windows</h2>
+            <p>当前安装包为 Windows x64 便携版。下载后直接运行即可体验；网页端保留同一套账户和会员体系。</p>
+          </div>
+          <div class="download-panel">
+            <div class="version">Version 1.0.0 · Windows x64 · 约 68 MB</div>
+            <a class="btn primary" href="./downloads/Project-Flow-1.0.0-x64.exe" download>下载安装包</a>
+            <a class="btn ghost" href="https://project-flow-delta.vercel.app">打开网页版</a>
+          </div>
+        </div>
+        <div class="notes" aria-label="下载说明">
+          <div class="note">注册登录需同意 Privacy Policy 和 Terms of Service。</div>
+          <div class="note">支付与 License Key 由 Creem 流程负责。</div>
+          <div class="note">服务支持：<a href="mailto:postmaster@pmpro.com.cn">postmaster@pmpro.com.cn</a></div>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <div>© 2026 Project Flow. Built for focused project execution.</div>
+      <div><a href="mailto:postmaster@pmpro.com.cn">postmaster@pmpro.com.cn</a></div>
+    </footer>
+  </div>
+</body>
+</html>

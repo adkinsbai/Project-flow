@@ -9,3 +9,5 @@ node_modules/
 release/
 dist/
 *.log
+website-deploy.zip
+website/downloads/*.exe
