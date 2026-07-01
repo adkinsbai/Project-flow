@@ -827,7 +827,7 @@ const LEGAL_DOCS={
       ]],
       ['4. Free Trial and Lifetime Membership',[
         'New users receive a 30-day free trial unless otherwise stated in the product interface.',
-        'After the trial, continued access to paid features may require a one-time lifetime membership purchase currently offered at 9.9 yuan, unless pricing is changed or a promotional offer applies.',
+        'After the trial, continued access to paid features may require a one-time lifetime access purchase currently offered at US$1.99, unless pricing is changed or a promotional offer applies.',
         'Lifetime membership means lifetime access to the paid Project Flow product features for the account or license covered by the purchase, subject to these Terms, product availability, lawful use, and reasonable technical limitations. It does not guarantee indefinite support for every old operating system, browser, third-party integration, or discontinued external provider.'
       ]],
       ['5. Payments, Creem Checkout, and License Keys',[
@@ -2147,7 +2147,7 @@ function AuthGate({mode='login',setMode,error,busy,configured=true,onSubmit,load
     <div className="auth-gate">
       <div className="auth-card">
         <div className="auth-logo">Project Flow</div>
-        <div className="auth-sub">登录后可获得 30 天免费试用。购买 9.9 元永久会员后，Creem 会完成支付和 License Key 分发。</div>
+        <div className="auth-sub">登录后可获得 30 天免费试用。购买 US$1.99 永久访问权限后，Creem 会完成支付和 License Key 分发。</div>
         <div className="auth-tabs">
           <button className={mode==='login'?'active':''} onClick={()=>setMode('login')}>登录</button>
           <button className={mode==='signup'?'active':''} onClick={()=>setMode('signup')}>注册</button>
@@ -2207,7 +2207,7 @@ function LockedOverlay({entitlement,onAccount,onGuide}){
     <div className="auth-gate" style={{background:'rgba(13,17,23,.86)',backdropFilter:'blur(8px)'}}>
       <div className="auth-card">
         <div className="auth-logo">试用已结束</div>
-        <div className="auth-sub">你的 30 天免费试用已经结束。购买 9.9 元永久会员或输入 Creem License Key 后即可继续使用 Project Flow。</div>
+        <div className="auth-sub">你的 30 天免费试用已经结束。购买 US$1.99 永久访问权限或输入 Creem License Key 后即可继续使用 Project Flow。</div>
         <div style={{display:'flex',gap:8}}>
           <button className="btn btn-green" onClick={onAccount}>购买 / 激活</button>
           <button className="btn btn-ghost" onClick={onGuide}>查看使用指南</button>
@@ -2232,8 +2232,8 @@ function AccountModal({user,bundle,licenseKey,setLicenseKey,licenseBusy,licenseE
         ):(
           <>
             <div className="mp-sep"/>
-            <p>永久会员价格 9.9 元。点击购买会跳转到 Creem 托管支付页；购买后 Creem 会提供 License Key，也会通过 webhook 自动解锁账户。</p>
-            <button className="btn btn-green" onClick={onCheckout}>购买永久会员 9.9 元</button>
+            <p>永久访问权限价格 US$1.99。点击购买会跳转到 Creem 托管支付页；购买后 Creem 会提供 License Key，也会通过 webhook 自动解锁账户。</p>
+            <button className="btn btn-green" onClick={onCheckout}>购买永久访问权限 US$1.99</button>
             <div className="license-row">
               <input value={licenseKey} onChange={e=>setLicenseKey(e.target.value)} placeholder="输入 Creem License Key"/>
               <button className="btn btn-ghost" disabled={licenseBusy||!licenseKey.trim()} onClick={onRedeem}>{licenseBusy?'激活中':'激活'}</button>

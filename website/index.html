@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-site-lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Project Flow | Visual Project Timeline</title>
-  <meta name="description" content="Project Flow is a visual project timeline for mapping projects as nodes, branches, deadlines, and Done states. Start with a 30-day free trial, then unlock lifetime access for $1.99.">
+  <meta name="description" content="Project Flow is a visual project timeline for mapping projects as nodes, branches, deadlines, and Done states. New users get a 30-day free trial. Lifetime access is available for US$1.99.">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%230f172a'/%3E%3Ccircle cx='32' cy='32' r='13' fill='%2300b8a9'/%3E%3C/svg%3E">
   <style>
     :root{
@@ -22,6 +22,7 @@
       overflow-x:hidden;
     }
     a{color:inherit;text-decoration:none}
+    button{font:inherit}
     .page{
       min-height:100vh;
       background:
@@ -33,7 +34,7 @@
     .nav{
       width:min(1200px,calc(100% - 48px));
       margin:0 auto;
-      padding:22px 0;
+      padding:20px 0;
       display:flex;
       align-items:center;
       justify-content:space-between;
@@ -45,7 +46,6 @@
       gap:10px;
       font-size:16px;
       font-weight:850;
-      letter-spacing:0;
       white-space:nowrap;
     }
     .mark{
@@ -69,16 +69,32 @@
       display:flex;
       align-items:center;
       justify-content:flex-end;
-      gap:10px;
+      gap:9px;
       min-width:0;
     }
+    .nav-links{
+      display:flex;
+      align-items:center;
+      gap:4px;
+      color:rgba(15,23,42,.68);
+      font-size:13px;
+      font-weight:800;
+    }
+    .nav-links a{
+      min-height:36px;
+      display:inline-flex;
+      align-items:center;
+      border-radius:999px;
+      padding:8px 10px;
+    }
+    .nav-links a:hover{color:var(--mint)}
     .lang-switch{
       display:flex;
       align-items:center;
       padding:3px;
       border:1px solid rgba(15,23,42,.18);
       border-radius:999px;
-      background:rgba(247,251,255,.82);
+      background:rgba(247,251,255,.86);
       flex:0 0 auto;
     }
     .lang-switch button{
@@ -89,10 +105,8 @@
       padding:8px 12px;
       color:rgba(15,23,42,.62);
       background:transparent;
-      font:inherit;
       font-size:13px;
       font-weight:850;
-      letter-spacing:0;
       cursor:pointer;
     }
     .lang-switch button[aria-pressed="true"]{
@@ -109,8 +123,8 @@
       padding:12px 18px;
       font-size:14px;
       font-weight:800;
-      transition:transform .18s ease,background .18s ease,border-color .18s ease,color .18s ease;
       white-space:nowrap;
+      transition:transform .18s ease,background .18s ease,border-color .18s ease,color .18s ease;
     }
     .btn:hover{transform:translateY(-2px)}
     .btn.primary{
@@ -133,7 +147,7 @@
     .hero{
       width:min(1200px,calc(100% - 48px));
       margin:0 auto;
-      padding:58px 0 72px;
+      padding:56px 0 64px;
       text-align:center;
     }
     .eyebrow{
@@ -143,7 +157,7 @@
       padding:7px 12px;
       border:1px solid rgba(15,23,42,.16);
       border-radius:999px;
-      background:rgba(247,251,255,.82);
+      background:rgba(247,251,255,.86);
       color:rgba(15,23,42,.72);
       font-size:13px;
       font-weight:760;
@@ -159,13 +173,13 @@
     h1{
       margin:24px auto 22px;
       max-width:980px;
-      font-size:clamp(46px,7.8vw,104px);
+      font-size:clamp(44px,7.6vw,102px);
       line-height:.94;
       letter-spacing:0;
     }
     .lead{
       margin:0 auto;
-      max-width:720px;
+      max-width:760px;
       color:rgba(15,23,42,.68);
       font-size:clamp(17px,2vw,22px);
       line-height:1.62;
@@ -177,14 +191,39 @@
       flex-wrap:wrap;
       gap:12px;
     }
+    .trust-row{
+      width:min(980px,calc(100% - 48px));
+      margin:0 auto 54px;
+      display:grid;
+      grid-template-columns:repeat(4,minmax(0,1fr));
+      gap:10px;
+    }
+    .trust-item{
+      min-height:84px;
+      border:1px solid rgba(15,23,42,.13);
+      border-radius:8px;
+      padding:16px;
+      background:rgba(247,251,255,.78);
+    }
+    .trust-item b{
+      display:block;
+      font-size:14px;
+      margin-bottom:6px;
+    }
+    .trust-item span{
+      display:block;
+      color:rgba(15,23,42,.64);
+      font-size:13px;
+      line-height:1.5;
+    }
     .showcase{
       width:min(1340px,calc(100% - 32px));
       margin:0 auto;
-      padding:0 0 88px;
+      padding:0 0 84px;
     }
     .shot-shell{
       position:relative;
-      border-radius:10px;
+      border-radius:8px;
       padding:10px;
       background:var(--ink);
       box-shadow:0 28px 90px rgba(15,23,42,.22);
@@ -195,7 +234,7 @@
       position:absolute;
       inset:0;
       border:1px solid rgba(247,251,255,.16);
-      border-radius:10px;
+      border-radius:8px;
       pointer-events:none;
     }
     .shot{
@@ -208,56 +247,80 @@
     main section{
       width:min(1200px,calc(100% - 48px));
       margin:0 auto;
-      padding:74px 0;
+      padding:72px 0;
     }
     .section-title{
       display:grid;
-      grid-template-columns:minmax(0,1fr) minmax(260px,440px);
+      grid-template-columns:minmax(0,1fr) minmax(260px,460px);
       align-items:end;
       gap:32px;
       margin-bottom:28px;
     }
     h2{
       margin:0;
-      font-size:clamp(32px,4.5vw,58px);
-      line-height:1.02;
+      font-size:clamp(31px,4.35vw,56px);
+      line-height:1.04;
       letter-spacing:0;
     }
-    .section-title p{
+    .section-title p,.section-copy{
       margin:0;
       color:rgba(15,23,42,.65);
       font-size:17px;
       line-height:1.68;
     }
-    .features{
+    .features,.commercial-grid,.contact-grid{
       display:grid;
       grid-template-columns:repeat(3,minmax(0,1fr));
       gap:14px;
     }
-    .feature{
-      min-height:190px;
+    .commercial-grid{grid-template-columns:1.1fr 1fr 1fr}
+    .contact-grid{grid-template-columns:1fr 1fr}
+    .feature,.info-box,.pricing-box{
+      min-height:184px;
       padding:26px;
       border:1px solid rgba(15,23,42,.13);
       border-radius:8px;
-      background:rgba(247,251,255,.78);
+      background:rgba(247,251,255,.82);
     }
-    .feature span{
+    .feature span,.info-box span,.pricing-box span{
       display:block;
-      margin-bottom:30px;
+      margin-bottom:28px;
       color:var(--mint);
       font-size:13px;
       font-weight:900;
     }
-    .feature h3{
+    .feature h3,.info-box h3,.pricing-box h3{
       margin:0 0 10px;
       font-size:23px;
       line-height:1.16;
-      letter-spacing:0;
     }
-    .feature p{
+    .feature p,.info-box p,.pricing-box p{
       margin:0;
       color:rgba(15,23,42,.64);
       line-height:1.65;
+    }
+    .price{
+      margin:4px 0 10px;
+      font-size:46px;
+      line-height:1;
+      font-weight:900;
+    }
+    .price small{
+      font-size:14px;
+      color:rgba(15,23,42,.58);
+      font-weight:800;
+    }
+    .plain-list{
+      margin:16px 0 0;
+      padding:0;
+      list-style:none;
+      color:rgba(15,23,42,.66);
+      line-height:1.65;
+      font-size:15px;
+    }
+    .plain-list li{
+      padding:8px 0;
+      border-top:1px solid rgba(15,23,42,.1);
     }
     .download{
       display:grid;
@@ -265,14 +328,14 @@
       align-items:center;
       gap:32px;
       padding:40px;
-      border-radius:10px;
+      border-radius:8px;
       background:var(--ink);
       color:var(--paper);
     }
     .download h2{color:var(--paper)}
     .download p{
       margin:16px 0 0;
-      max-width:700px;
+      max-width:720px;
       color:rgba(247,251,255,.72);
       line-height:1.72;
     }
@@ -305,55 +368,153 @@
       border-color:rgba(247,251,255,.34);
     }
     .download .btn.ghost:hover{color:var(--mint);border-color:var(--mint)}
+    .legal-shell{
+      background:var(--paper);
+      border-top:1px solid rgba(15,23,42,.1);
+      border-bottom:1px solid rgba(15,23,42,.1);
+    }
+    .legal-wrap{
+      width:min(1200px,calc(100% - 48px));
+      margin:0 auto;
+      padding:72px 0;
+    }
+    .legal-actions{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      margin:22px 0 30px;
+    }
+    .legal-docs{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:16px;
+      align-items:start;
+    }
+    .legal-doc{
+      border:1px solid rgba(15,23,42,.16);
+      border-radius:8px;
+      background:#fff;
+      color:#111827;
+      padding:28px;
+    }
+    .legal-doc h3{
+      margin:0;
+      font-size:28px;
+      line-height:1.16;
+    }
+    .updated{
+      margin:7px 0 18px;
+      color:#4b5563;
+      font-size:13px;
+      font-weight:800;
+    }
+    .legal-doc h4{
+      margin:22px 0 8px;
+      font-size:16px;
+      line-height:1.35;
+    }
+    .legal-doc p,.legal-doc li{
+      color:#1f2937;
+      font-size:14px;
+      line-height:1.68;
+    }
+    .legal-doc ul{
+      margin:8px 0 0;
+      padding-left:19px;
+    }
+    .contact-panel{
+      padding:28px;
+      border-radius:8px;
+      background:var(--ink);
+      color:var(--paper);
+    }
+    .contact-panel h3{
+      margin:0 0 12px;
+      font-size:28px;
+    }
+    .contact-panel p{
+      margin:0 0 18px;
+      color:rgba(247,251,255,.72);
+      line-height:1.7;
+    }
+    .contact-panel a{
+      color:var(--paper);
+      font-weight:900;
+      text-decoration:underline;
+      text-decoration-thickness:1px;
+      text-underline-offset:4px;
+    }
+    .icp-note{
+      border:1px solid rgba(15,23,42,.13);
+      border-radius:8px;
+      padding:28px;
+      background:rgba(247,251,255,.82);
+    }
+    .icp-note h3{
+      margin:0 0 12px;
+      font-size:28px;
+    }
+    .icp-note p{
+      margin:0;
+      color:rgba(15,23,42,.66);
+      line-height:1.7;
+    }
     footer{
       width:min(1200px,calc(100% - 48px));
       margin:0 auto;
       padding:36px 0 52px;
-      border-top:1px solid rgba(15,23,42,.12);
-      display:flex;
-      justify-content:space-between;
+      display:grid;
+      grid-template-columns:minmax(0,1fr) auto;
       gap:18px;
       color:rgba(15,23,42,.58);
       font-size:14px;
-      line-height:1.6;
+      line-height:1.7;
     }
-    footer a{font-weight:800;color:var(--ink)}
+    .footer-links{
+      display:flex;
+      justify-content:flex-end;
+      gap:14px;
+      flex-wrap:wrap;
+      font-weight:850;
+      color:var(--ink);
+    }
+    .icp-line{
+      color:rgba(15,23,42,.58);
+      font-size:13px;
+    }
+    .lang-zh{display:none}
+    html[data-site-lang="zh"] .lang-en{display:none}
+    html[data-site-lang="zh"] .lang-zh{display:initial}
+    html[data-site-lang="zh"] .lang-block.lang-zh{display:block}
+    html[data-site-lang="zh"] .lang-grid.lang-zh{display:grid}
     @media (prefers-reduced-motion:reduce){
       html{scroll-behavior:auto}
       *,*::before,*::after{transition:none!important}
     }
-    @media (max-width:900px){
-      .hero{padding-top:42px}
-      .section-title,.download{grid-template-columns:1fr}
-      .features{grid-template-columns:1fr}
-      .feature{min-height:0}
+    @media (max-width:1080px){
+      .nav-links{display:none}
+      .trust-row{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .commercial-grid,.features{grid-template-columns:1fr}
+      .legal-docs,.download,.section-title,.contact-grid{grid-template-columns:1fr}
     }
     @media (max-width:680px){
-      .nav,.hero,main section,footer{width:min(100% - 28px,1200px)}
-      .nav{
-        padding:15px 0;
-        align-items:flex-start;
-      }
-      .nav-actions{
-        flex-wrap:wrap;
-        gap:8px;
-      }
+      .nav,.hero,main section,.legal-wrap,footer{width:min(100% - 28px,1200px)}
+      .nav{padding:15px 0;align-items:flex-start}
+      .nav-actions{flex-wrap:wrap;gap:8px}
       .nav-actions .ghost{display:none}
-      .lang-switch button{
-        min-width:40px;
-        padding:8px 10px;
-      }
-      .hero{text-align:left;padding-bottom:42px}
+      .lang-switch button{min-width:40px;padding:8px 10px}
+      .hero{text-align:left;padding:40px 0 42px}
       .hero-actions{justify-content:flex-start}
       .hero-actions .btn{width:100%}
+      .trust-row{width:min(100% - 28px,980px);grid-template-columns:1fr;margin-bottom:42px}
       .showcase{width:100%;padding-bottom:52px}
       .shot-shell{border-radius:0;padding:0}
       .shot-shell::before{display:none}
       .shot{border-radius:0;min-height:300px;object-fit:cover;object-position:center}
-      main section{padding:52px 0}
-      .download{padding:26px}
-      footer{display:block}
-      footer div+div{margin-top:8px}
+      main section,.legal-wrap{padding:52px 0}
+      .download,.legal-doc,.contact-panel,.icp-note{padding:24px}
+      footer{grid-template-columns:1fr}
+      .footer-links{justify-content:flex-start}
     }
   </style>
 </head>
@@ -365,6 +526,12 @@
         <span>Project Flow</span>
       </a>
       <div class="nav-actions">
+        <div class="nav-links" aria-label="Page sections">
+          <a href="#features" data-i18n="navProduct">Product</a>
+          <a href="#pricing" data-i18n="navPricing">Pricing</a>
+          <a href="#legal" data-i18n="navLegal">Legal</a>
+          <a href="#contact" data-i18n="navContact">Contact</a>
+        </div>
         <div class="lang-switch" aria-label="Language switcher">
           <button type="button" data-lang="en" aria-pressed="true">EN</button>
           <button type="button" data-lang="zh" aria-pressed="false">中文</button>
@@ -375,7 +542,7 @@
     </nav>
 
     <header class="hero" id="top">
-      <div class="eyebrow"><span class="pulse" aria-hidden="true"></span><span data-i18n="eyebrow">30-day free trial · $1.99 lifetime access</span></div>
+      <div class="eyebrow"><span class="pulse" aria-hidden="true"></span><span data-i18n="eyebrow">30-day free trial · US$1.99 lifetime access</span></div>
       <h1 data-i18n="heroTitle">Turn complex projects into a clear visual timeline.</h1>
       <p class="lead" data-i18n="heroLead">Project Flow helps you map work as nodes, branches, deadlines, and Done states, so every project shows where it started, what changed, and what needs attention today.</p>
       <div class="hero-actions">
@@ -384,9 +551,28 @@
       </div>
     </header>
 
+    <div class="trust-row" aria-label="Commercial information">
+      <div class="trust-item">
+        <b data-i18n="trustTrialTitle">Free trial</b>
+        <span data-i18n="trustTrialText">30 days for new users before paid access is required.</span>
+      </div>
+      <div class="trust-item">
+        <b data-i18n="trustPriceTitle">Clear pricing</b>
+        <span data-i18n="trustPriceText">One-time lifetime access is currently US$1.99.</span>
+      </div>
+      <div class="trust-item">
+        <b data-i18n="trustRefundTitle">Refund rules</b>
+        <span data-i18n="trustRefundText">Refund policy is published below before checkout.</span>
+      </div>
+      <div class="trust-item">
+        <b data-i18n="trustContactTitle">Support contact</b>
+        <span><a href="mailto:postmaster@pmpro.com.cn">postmaster@pmpro.com.cn</a></span>
+      </div>
+    </div>
+
     <div class="showcase" aria-label="Project Flow product screenshot">
       <div class="shot-shell">
-        <img class="shot" src="./assets/project-flow-canvas.png" data-i18n-alt="imageAlt" alt="Project Flow timeline canvas showing project nodes, branch connections, and the Today date column.">
+        <img class="shot" src="/website/assets/project-flow-canvas.png" data-i18n-alt="imageAlt" alt="Project Flow timeline canvas showing project nodes, branch connections, and the Today date column.">
       </div>
     </div>
 
@@ -415,11 +601,41 @@
         </div>
       </section>
 
+      <section id="pricing">
+        <div class="section-title">
+          <h2 data-i18n="pricingTitle">Pricing and refund rules are stated before purchase.</h2>
+          <p data-i18n="pricingLead">Project Flow uses a simple trial and license model. Checkout and license delivery may be handled by Creem.</p>
+        </div>
+        <div class="commercial-grid">
+          <article class="pricing-box">
+            <span data-i18n="pricingLabel">Current price</span>
+            <h3 data-i18n="pricingPlan">Lifetime Access</h3>
+            <div class="price">US$1.99 <small data-i18n="pricingOnce">one-time</small></div>
+            <p data-i18n="pricingText">Includes access to paid Project Flow features for the licensed account, subject to the Terms of Service, product availability, and reasonable technical limitations.</p>
+            <ul class="plain-list">
+              <li data-i18n="pricingItemOne">30-day free trial for new users.</li>
+              <li data-i18n="pricingItemTwo">License key or account unlock after payment.</li>
+              <li data-i18n="pricingItemThree">Taxes, if any, are shown by the checkout provider.</li>
+            </ul>
+          </article>
+          <article class="info-box">
+            <span data-i18n="refundLabel">Refund policy</span>
+            <h3 data-i18n="refundTitle">Clear and limited</h3>
+            <p data-i18n="refundText">Refunds may be requested within 7 days if the license has not been redeemed, or if a confirmed technical activation issue cannot be resolved. Duplicate purchases and mistaken-account cases are reviewed by support. After license delivery or account unlock, purchases are generally final unless applicable law requires otherwise.</p>
+          </article>
+          <article class="info-box">
+            <span data-i18n="claimsLabel">No false claims</span>
+            <h3 data-i18n="claimsTitle">What it does</h3>
+            <p data-i18n="claimsText">Project Flow is a project planning and timeline visualization tool. It is not advertised as a legal, financial, medical, data-recovery, enterprise SLA, or security certification product.</p>
+          </article>
+        </div>
+      </section>
+
       <section id="download">
         <div class="download">
           <div>
             <h2 data-i18n="downloadTitle">Download Project Flow for Windows</h2>
-            <p data-i18n="downloadLead">Use the desktop app for daily planning, or open the web app with the same account, trial, and membership flow. New users get a 30-day free trial. Lifetime access is available for $1.99 through the payment and license key flow.</p>
+            <p data-i18n="downloadLead">Use the desktop app for daily planning, or open the web app with the same account, trial, and membership flow. New users get a 30-day free trial. Lifetime access is available for US$1.99 through the payment and license key flow.</p>
           </div>
           <div class="download-panel">
             <div class="version" data-i18n="version">Version 1.0.0 · Windows x64 · about 68 MB</div>
@@ -430,9 +646,226 @@
       </section>
     </main>
 
+    <section class="legal-shell" id="legal" aria-label="Legal documents">
+      <div class="legal-wrap">
+        <div class="section-title">
+          <h2 data-i18n="legalTitle">Legal center</h2>
+          <p data-i18n="legalLead">Privacy Policy and Terms of Service are published in full on this page so users can review them before registration, purchase, or license redemption.</p>
+        </div>
+        <div class="legal-actions">
+          <a class="btn ghost" href="#privacy" data-i18n="privacyJump">Privacy Policy</a>
+          <a class="btn ghost" href="#terms" data-i18n="termsJump">Terms of Service</a>
+          <a class="btn ghost" href="#contact" data-i18n="contactJump">Contact Support</a>
+        </div>
+
+        <div class="legal-docs lang-en lang-grid">
+          <article class="legal-doc" id="privacy">
+            <h3>Privacy Policy</h3>
+            <div class="updated">Last updated: July 1, 2026</div>
+            <p>This Privacy Policy explains how Project Flow collects, uses, stores, and protects information when you create an account, use the web or desktop app, start a free trial, purchase lifetime access, or redeem a license key.</p>
+            <h4>1. Who We Are</h4>
+            <p>Project Flow is a visual project and workflow planning product. For privacy questions, account requests, payment support, or data requests, contact <a href="mailto:postmaster@pmpro.com.cn">postmaster@pmpro.com.cn</a>.</p>
+            <h4>2. Information We Collect</h4>
+            <ul>
+              <li>Account information, including email address, authentication identifiers, trial status, membership status, and basic settings.</li>
+              <li>Workspace information that you choose to create, including project names, tasks, dates, statuses, branches, layout preferences, guide state, and sync metadata.</li>
+              <li>Payment and license information needed to verify purchases, including checkout references, license key verification results, product identifiers, payment status, and support records.</li>
+              <li>Technical information such as browser type, device type, app version, timestamps, security logs, and error logs needed to operate and secure the service.</li>
+            </ul>
+            <h4>3. Information We Do Not Intentionally Collect</h4>
+            <ul>
+              <li>We do not intentionally collect full payment card numbers, bank details, or complete payment credentials in the Project Flow frontend.</li>
+              <li>We do not ask users to upload government identifiers, health records, or other highly sensitive personal information into project timelines.</li>
+            </ul>
+            <h4>4. How We Use Information</h4>
+            <ul>
+              <li>To create and secure your account, authenticate you, provide the 30-day free trial, and manage lifetime access.</li>
+              <li>To save and sync workspace data across devices when cloud sync is enabled.</li>
+              <li>To process checkout redirects, verify license keys, receive payment-related events, prevent abuse, and provide purchase support.</li>
+              <li>To maintain the product, debug issues, improve reliability, and communicate account, payment, security, or policy updates.</li>
+            </ul>
+            <h4>5. Storage and Service Providers</h4>
+            <ul>
+              <li>Supabase may be used for authentication, profile records, membership status, and cloud workspace storage.</li>
+              <li>Creem or another checkout provider may be used for payment handling, license key delivery, receipts, taxes where applicable, and purchase verification.</li>
+              <li>Vercel, GitHub, or similar hosting providers may serve the frontend and release files.</li>
+              <li>If you connect GitHub Gist sync, workspace data may be stored in your GitHub account according to your GitHub settings.</li>
+            </ul>
+            <h4>6. Local Data and Cloud Sync</h4>
+            <p>Project Flow may store workspace data locally in your browser or desktop app. If you sign in and cloud sync is active, workspace data can also be stored through the backend so you can access it on multiple devices. Avoid entering passwords, secrets, payment credentials, or highly sensitive personal data into project titles or task notes.</p>
+            <h4>7. Sharing and Disclosure</h4>
+            <p>We do not sell personal information. We may share limited information with service providers that help operate Project Flow, process payments, verify licenses, prevent abuse, comply with law, resolve disputes, or protect service security.</p>
+            <h4>8. Retention</h4>
+            <p>We keep account, trial, membership, license, and workspace records for as long as needed to provide the service, comply with legal obligations, resolve disputes, enforce agreements, and maintain backups. You may request account or workspace deletion by contacting support. Certain purchase, tax, accounting, fraud-prevention, or legal records may be retained where required.</p>
+            <h4>9. Security</h4>
+            <p>We use reasonable administrative, technical, and organizational safeguards, including authentication controls and server-side handling of private payment and database keys. No system is perfectly secure. You are responsible for keeping your password, email account, device, and connected tokens secure.</p>
+            <h4>10. Your Choices and Rights</h4>
+            <p>You may access, update, export, or delete certain workspace data through the app. You may also contact us to request access, correction, deletion, or privacy-related assistance. Privacy rights vary by location, and we will respond to valid requests as required by applicable law.</p>
+            <h4>11. Children</h4>
+            <p>Project Flow is not intended for children under 13, and we do not knowingly collect personal information from children under 13.</p>
+            <h4>12. International Use</h4>
+            <p>If you use Project Flow from outside the country where our providers operate, your information may be processed in other jurisdictions where privacy laws may differ from yours.</p>
+            <h4>13. Changes to This Policy</h4>
+            <p>We may update this Privacy Policy from time to time. Material changes will be reflected by updating the date above and, when appropriate, by providing additional notice in the app or by email.</p>
+          </article>
+
+          <article class="legal-doc" id="terms">
+            <h3>Terms of Service</h3>
+            <div class="updated">Last updated: July 1, 2026</div>
+            <p>These Terms of Service govern your access to and use of Project Flow, including the website, web app, desktop app, account system, free trial, lifetime access purchase, and license key flow.</p>
+            <h4>1. Acceptance of Terms</h4>
+            <p>By creating an account, signing in, checking an agreement box, using Project Flow, purchasing lifetime access, or redeeming a license key, you agree to these Terms of Service and the Privacy Policy. If you do not agree, do not use Project Flow.</p>
+            <h4>2. Product Description</h4>
+            <p>Project Flow is a workflow and project planning tool that helps users organize projects, tasks, branches, deadlines, progress, and workspace views. It may store data locally and, when account sync is enabled, through backend services.</p>
+            <h4>3. Account Registration and Security</h4>
+            <p>You must provide accurate account information and keep your login credentials secure. You are responsible for all activity under your account and should notify support if you believe your account has been compromised.</p>
+            <h4>4. Free Trial and Lifetime Access</h4>
+            <ul>
+              <li>New users receive a 30-day free trial unless otherwise stated in the product interface.</li>
+              <li>After the trial, continued access to paid features may require a one-time lifetime access purchase currently offered at US$1.99.</li>
+              <li>Lifetime access means access to paid Project Flow features for the licensed account or license, subject to these Terms, product availability, lawful use, and reasonable technical limitations. It does not guarantee indefinite support for every old operating system, browser, third-party integration, or discontinued external provider.</li>
+            </ul>
+            <h4>5. Payments and License Keys</h4>
+            <p>Payments may be processed through Creem or another checkout provider. The checkout provider may handle payment details, receipts, taxes where applicable, customer portal features, and license key delivery. We do not store full card details in the Project Flow frontend. You are responsible for entering accurate account and payment information during checkout.</p>
+            <h4>6. Refunds and Billing Support</h4>
+            <p>Refunds may be requested within 7 days if the license has not been redeemed, or if a confirmed technical activation issue cannot be resolved. Duplicate purchases and mistaken-account cases are reviewed by support. After license delivery or account unlock, purchases are generally final unless applicable law requires otherwise. For billing support, contact <a href="mailto:postmaster@pmpro.com.cn">postmaster@pmpro.com.cn</a> with your account email and order information.</p>
+            <h4>7. License and Acceptable Use</h4>
+            <p>Subject to these Terms, we grant you a limited, non-exclusive, non-transferable license to use Project Flow for personal or internal business planning. You may not abuse the service, bypass payment or license checks, scrape or attack the backend, resell accounts or license keys without permission, upload malware, infringe others' rights, or use Project Flow for unlawful activity.</p>
+            <h4>8. Your Content and Responsibility</h4>
+            <p>You retain rights to the project and task content you create. You grant us the limited rights needed to host, sync, display, back up, secure, and support that content as part of providing Project Flow. You are responsible for keeping backup copies of important information. Project Flow should not be your only record for mission-critical or legally required data.</p>
+            <h4>9. Third-Party Services</h4>
+            <p>Project Flow may depend on Supabase, Creem, Vercel, GitHub, or other third-party services. Their availability, terms, privacy practices, fees, and outages are outside our direct control. Optional integrations such as GitHub Gist sync are governed by your third-party account settings.</p>
+            <h4>10. Changes, Availability, and Beta Features</h4>
+            <p>We may improve, modify, suspend, or discontinue parts of Project Flow. Some features may be experimental or subject to change, including payment flows, license key handling, desktop features, and sync behavior. We aim to keep the product useful and stable but do not guarantee uninterrupted or error-free operation.</p>
+            <h4>11. Termination</h4>
+            <p>You may stop using Project Flow at any time. We may suspend or terminate access if you violate these Terms, create risk for the service, fail payment or license verification, or use the product unlawfully.</p>
+            <h4>12. Disclaimers and Limitation of Liability</h4>
+            <p>Project Flow is provided on an as-is and as-available basis to the maximum extent permitted by law. We do not warrant that the product will meet every requirement, be uninterrupted, be error-free, or preserve all data under every circumstance. To the maximum extent permitted by law, we are not liable for indirect, incidental, special, consequential, exemplary, or punitive damages, lost profits, lost data, business interruption, or loss of goodwill.</p>
+            <h4>13. Contact</h4>
+            <p>For legal, privacy, payment, or support questions, contact <a href="mailto:postmaster@pmpro.com.cn">postmaster@pmpro.com.cn</a>.</p>
+          </article>
+        </div>
+
+        <div class="legal-docs lang-zh lang-grid">
+          <article class="legal-doc">
+            <h3>隐私政策</h3>
+            <div class="updated">最后更新：2026 年 7 月 1 日</div>
+            <p>本隐私政策说明 Project Flow 在你注册账号、使用网页端或桌面端、开始免费试用、购买永久访问权限或兑换 License Key 时，如何收集、使用、存储和保护信息。</p>
+            <h4>1. 我们是谁</h4>
+            <p>Project Flow 是一款可视化项目与工作流规划产品。如需隐私、账号、支付或数据相关支持，请联系 <a href="mailto:postmaster@pmpro.com.cn">postmaster@pmpro.com.cn</a>。</p>
+            <h4>2. 我们收集的信息</h4>
+            <ul>
+              <li>账号信息，包括邮箱、认证标识、试用状态、会员状态和基础设置。</li>
+              <li>你主动创建的工作区信息，包括项目名、任务、日期、状态、分支、布局偏好、指南状态和同步元数据。</li>
+              <li>用于核验购买的信息，包括 checkout 引用、License Key 验证结果、产品标识、支付状态和支持记录。</li>
+              <li>用于运行和保护服务的技术信息，例如浏览器类型、设备类型、应用版本、时间戳、安全日志和错误日志。</li>
+            </ul>
+            <h4>3. 我们不会主动收集的信息</h4>
+            <ul>
+              <li>Project Flow 前端不会主动收集完整银行卡号、银行账户信息或完整支付凭证。</li>
+              <li>我们不会要求你把身份证件、健康记录或其他高度敏感信息上传到项目时间线中。</li>
+            </ul>
+            <h4>4. 信息用途</h4>
+            <ul>
+              <li>创建和保护账号、完成登录认证、提供 30 天免费试用、管理永久访问权限。</li>
+              <li>在开启云同步时保存和同步你的工作区数据。</li>
+              <li>处理支付跳转、验证 License Key、接收支付相关事件、防止滥用并提供购买支持。</li>
+              <li>维护产品、排查问题、提升可靠性，并发送账号、支付、安全或政策更新。</li>
+            </ul>
+            <h4>5. 存储与服务提供方</h4>
+            <ul>
+              <li>Supabase 可用于认证、用户资料、会员状态和云端工作区存储。</li>
+              <li>Creem 或其他支付服务商可用于支付处理、License Key 分发、收据、税费和购买验证。</li>
+              <li>Vercel、GitHub 或类似服务可用于托管前端页面和发布文件。</li>
+              <li>如果你连接 GitHub Gist 同步，工作区数据可能会按照你的 GitHub 设置存储在你的 GitHub 账号中。</li>
+            </ul>
+            <h4>6. 本地数据与云同步</h4>
+            <p>Project Flow 可能会在浏览器或桌面端本地保存工作区数据。登录并开启云同步后，数据也可能通过后端服务存储，以支持多设备访问。请不要在项目标题或任务备注中写入密码、密钥、支付凭证或高度敏感个人信息。</p>
+            <h4>7. 共享与披露</h4>
+            <p>我们不会出售个人信息。我们可能会向帮助运营 Project Flow、处理支付、验证许可、防止滥用、遵守法律、解决争议或保护服务安全的服务提供方共享必要信息。</p>
+            <h4>8. 保留期限</h4>
+            <p>我们会在提供服务、履行法律义务、解决争议、执行协议和维护备份所需期间保留账号、试用、会员、许可和工作区记录。你可以联系支持请求删除账号或工作区数据。部分购买、税务、会计、防欺诈或法律记录可能需要依法保留。</p>
+            <h4>9. 安全</h4>
+            <p>我们采用合理的管理、技术和组织措施，包括认证控制，以及在服务端处理支付和数据库私钥。没有任何系统能保证绝对安全，你也需要保护好自己的密码、邮箱、设备和第三方 token。</p>
+            <h4>10. 你的选择与权利</h4>
+            <p>你可以在应用中访问、更新、导出或删除部分工作区数据，也可以联系我们提出访问、更正、删除或其他隐私相关请求。不同地区的隐私权利可能不同，我们会按照适用法律处理有效请求。</p>
+            <h4>11. 儿童</h4>
+            <p>Project Flow 不面向 13 岁以下儿童，我们不会有意收集 13 岁以下儿童的个人信息。</p>
+            <h4>12. 跨境使用</h4>
+            <p>如果你在服务提供方所在国家或地区以外使用 Project Flow，你的信息可能会在其他司法辖区被处理，当地隐私法律可能与你所在地不同。</p>
+            <h4>13. 政策更新</h4>
+            <p>我们可能会不时更新本隐私政策。重大变更会通过更新日期体现，并在适当情况下通过应用或邮件提供额外通知。</p>
+          </article>
+
+          <article class="legal-doc">
+            <h3>用户服务条款</h3>
+            <div class="updated">最后更新：2026 年 7 月 1 日</div>
+            <p>本服务条款适用于你访问和使用 Project Flow，包括官网、网页端、桌面端、账号系统、免费试用、永久访问权限购买和 License Key 流程。</p>
+            <h4>1. 接受条款</h4>
+            <p>当你注册账号、登录、勾选同意框、使用 Project Flow、购买永久访问权限或兑换 License Key 时，即表示你同意本服务条款和隐私政策。如果不同意，请不要使用 Project Flow。</p>
+            <h4>2. 产品说明</h4>
+            <p>Project Flow 是一款工作流和项目规划工具，帮助用户整理项目、任务、分支、截止日期、进度和工作区视图。数据可能保存在本地；开启账号同步时，也可能通过后端服务保存。</p>
+            <h4>3. 账号注册与安全</h4>
+            <p>你需要提供准确的账号信息并妥善保管登录凭证。你需要对账号下发生的活动负责；如果怀疑账号被盗，请联系支持邮箱。</p>
+            <h4>4. 免费试用与永久访问权限</h4>
+            <ul>
+              <li>新用户默认可获得 30 天免费试用，除非产品界面另有说明。</li>
+              <li>试用结束后，继续使用付费功能可能需要一次性购买永久访问权限，当前价格为 US$1.99。</li>
+              <li>永久访问权限指在遵守本条款、产品可用、合法使用和合理技术限制的前提下，授权账号或许可可访问 Project Flow 付费功能。它不保证永久支持所有旧系统、旧浏览器、第三方集成或已停止服务的外部提供方。</li>
+            </ul>
+            <h4>5. 支付与 License Key</h4>
+            <p>支付可通过 Creem 或其他支付服务商处理。支付服务商可能负责支付详情、收据、适用税费、客户门户和 License Key 分发。Project Flow 前端不会保存完整银行卡信息。你需要在 checkout 时填写准确的账号和支付信息。</p>
+            <h4>6. 退款与账单支持</h4>
+            <p>如果 License Key 尚未兑换，或存在经确认且无法解决的技术激活问题，你可以在购买后 7 天内申请退款。重复购买和误用账号等情况由支持团队审核。License Key 已交付或账号已解锁后，除非适用法律另有要求，购买通常视为最终完成。如需账单支持，请用账号邮箱和订单信息联系 <a href="mailto:postmaster@pmpro.com.cn">postmaster@pmpro.com.cn</a>。</p>
+            <h4>7. 授权与可接受使用</h4>
+            <p>在遵守本条款的前提下，我们授予你有限的、非独占、不可转让的使用许可，用于个人或内部业务项目规划。你不得滥用服务、绕过支付或许可校验、攻击后端、未经许可转售账号或 License Key、上传恶意软件、侵犯他人权利或用于违法活动。</p>
+            <h4>8. 你的内容与责任</h4>
+            <p>你保留对自己创建的项目和任务内容的权利。为了提供 Project Flow 服务，你授予我们托管、同步、展示、备份、保护和支持这些内容所需的有限权利。你应自行备份重要信息，Project Flow 不应作为关键业务或法定数据的唯一记录。</p>
+            <h4>9. 第三方服务</h4>
+            <p>Project Flow 可能依赖 Supabase、Creem、Vercel、GitHub 或其他第三方服务。这些服务的可用性、条款、隐私做法、费用和故障不完全由我们控制。可选集成如 GitHub Gist 同步，还受你的第三方账号设置约束。</p>
+            <h4>10. 变更、可用性与测试功能</h4>
+            <p>我们可能改进、修改、暂停或停止 Project Flow 的部分功能。支付流程、License Key、桌面端功能和同步行为等可能处于实验或变化中。我们会尽力保持产品稳定可用，但不承诺永不中断或完全无错误。</p>
+            <h4>11. 终止</h4>
+            <p>你可以随时停止使用 Project Flow。如果你违反条款、造成服务风险、支付或许可校验失败，或将产品用于违法目的，我们可能暂停或终止访问。</p>
+            <h4>12. 免责声明与责任限制</h4>
+            <p>在法律允许的最大范围内，Project Flow 按现状和可用状态提供。我们不保证产品满足所有要求、不中断、无错误或在所有情况下保存全部数据。在法律允许的最大范围内，我们不对间接、附带、特殊、后果性、惩罚性损害、利润损失、数据丢失、业务中断或商誉损失承担责任。</p>
+            <h4>13. 联系方式</h4>
+            <p>如有法律、隐私、支付或支持问题，请联系 <a href="mailto:postmaster@pmpro.com.cn">postmaster@pmpro.com.cn</a>。</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <main>
+      <section id="contact">
+        <div class="section-title">
+          <h2 data-i18n="contactTitle">Contact and compliance information</h2>
+          <p data-i18n="contactLead">Users can reach Project Flow for support, privacy requests, billing questions, and legal notices through the public contact email below.</p>
+        </div>
+        <div class="contact-grid">
+          <div class="contact-panel">
+            <h3 data-i18n="supportTitle">Support email</h3>
+            <p data-i18n="supportText">For account, payment, license, privacy, or legal requests, contact us by email. Please include your account email and order reference when asking about purchases.</p>
+            <a href="mailto:postmaster@pmpro.com.cn">postmaster@pmpro.com.cn</a>
+          </div>
+          <div class="icp-note">
+            <h3 data-i18n="icpTitle">ICP filing status</h3>
+            <p data-i18n="icpText">This website is intended to be hosted on Vercel while the mainland China ICP filing is not available. If Project Flow is hosted on a mainland China server, the official ICP filing number must be displayed in the footer before public launch.</p>
+          </div>
+        </div>
+      </section>
+    </main>
+
     <footer>
-      <div data-i18n="footerCopy">© 2026 Project Flow. Built for focused project execution.</div>
-      <div><a href="mailto:postmaster@pmpro.com.cn">postmaster@pmpro.com.cn</a></div>
+      <div>
+        <div data-i18n="footerCopy">© 2026 Project Flow. Built for focused project execution.</div>
+        <div class="icp-line" data-i18n="footerIcp">ICP filing: not applicable while hosted outside mainland China; mainland China server hosting requires an issued ICP filing number.</div>
+      </div>
+      <div class="footer-links">
+        <a href="#privacy" data-i18n="footerPrivacy">Privacy Policy</a>
+        <a href="#terms" data-i18n="footerTerms">Terms of Service</a>
+        <a href="mailto:postmaster@pmpro.com.cn">postmaster@pmpro.com.cn</a>
+      </div>
     </footer>
   </div>
 
@@ -440,14 +873,25 @@
     const COPY = {
       en: {
         documentTitle: "Project Flow | Visual Project Timeline",
-        metaDescription: "Project Flow is a visual project timeline for mapping projects as nodes, branches, deadlines, and Done states. Start with a 30-day free trial, then unlock lifetime access for $1.99.",
+        metaDescription: "Project Flow is a visual project timeline for mapping projects as nodes, branches, deadlines, and Done states. New users get a 30-day free trial. Lifetime access is available for US$1.99.",
+        navProduct: "Product",
+        navPricing: "Pricing",
+        navLegal: "Legal",
+        navContact: "Contact",
         navWeb: "Open Web App",
         navDownload: "Download",
-        eyebrow: "30-day free trial · $1.99 lifetime access",
+        eyebrow: "30-day free trial · US$1.99 lifetime access",
         heroTitle: "Turn complex projects into a clear visual timeline.",
         heroLead: "Project Flow helps you map work as nodes, branches, deadlines, and Done states, so every project shows where it started, what changed, and what needs attention today.",
         heroDownload: "Download for Windows",
         heroWeb: "Open Web App",
+        trustTrialTitle: "Free trial",
+        trustTrialText: "30 days for new users before paid access is required.",
+        trustPriceTitle: "Clear pricing",
+        trustPriceText: "One-time lifetime access is currently US$1.99.",
+        trustRefundTitle: "Refund rules",
+        trustRefundText: "Refund policy is published below before checkout.",
+        trustContactTitle: "Support contact",
         imageAlt: "Project Flow timeline canvas showing project nodes, branch connections, and the Today date column.",
         featuresTitle: "See the whole project, not just the next task.",
         featuresLead: "Project Flow is designed for founders, makers, students, and small teams who need more context than a simple todo list.",
@@ -457,23 +901,63 @@
         featureTwoText: "Every continuation can create a branch, preserving the real options and decisions that appear during execution.",
         featureThreeTitle: "Done",
         featureThreeText: "Mark work as Done when it is finished, so completed paths are easy to review, close, and archive.",
+        pricingTitle: "Pricing and refund rules are stated before purchase.",
+        pricingLead: "Project Flow uses a simple trial and license model. Checkout and license delivery may be handled by Creem.",
+        pricingLabel: "Current price",
+        pricingPlan: "Lifetime Access",
+        pricingOnce: "one-time",
+        pricingText: "Includes access to paid Project Flow features for the licensed account, subject to the Terms of Service, product availability, and reasonable technical limitations.",
+        pricingItemOne: "30-day free trial for new users.",
+        pricingItemTwo: "License key or account unlock after payment.",
+        pricingItemThree: "Taxes, if any, are shown by the checkout provider.",
+        refundLabel: "Refund policy",
+        refundTitle: "Clear and limited",
+        refundText: "Refunds may be requested within 7 days if the license has not been redeemed, or if a confirmed technical activation issue cannot be resolved. Duplicate purchases and mistaken-account cases are reviewed by support. After license delivery or account unlock, purchases are generally final unless applicable law requires otherwise.",
+        claimsLabel: "No false claims",
+        claimsTitle: "What it does",
+        claimsText: "Project Flow is a project planning and timeline visualization tool. It is not advertised as a legal, financial, medical, data-recovery, enterprise SLA, or security certification product.",
         downloadTitle: "Download Project Flow for Windows",
-        downloadLead: "Use the desktop app for daily planning, or open the web app with the same account, trial, and membership flow. New users get a 30-day free trial. Lifetime access is available for $1.99 through the payment and license key flow.",
+        downloadLead: "Use the desktop app for daily planning, or open the web app with the same account, trial, and membership flow. New users get a 30-day free trial. Lifetime access is available for US$1.99 through the payment and license key flow.",
         version: "Version 1.0.0 · Windows x64 · about 68 MB",
         downloadInstaller: "Download Installer",
         downloadWeb: "Open Web App",
-        footerCopy: "© 2026 Project Flow. Built for focused project execution."
+        legalTitle: "Legal center",
+        legalLead: "Privacy Policy and Terms of Service are published in full on this page so users can review them before registration, purchase, or license redemption.",
+        privacyJump: "Privacy Policy",
+        termsJump: "Terms of Service",
+        contactJump: "Contact Support",
+        contactTitle: "Contact and compliance information",
+        contactLead: "Users can reach Project Flow for support, privacy requests, billing questions, and legal notices through the public contact email below.",
+        supportTitle: "Support email",
+        supportText: "For account, payment, license, privacy, or legal requests, contact us by email. Please include your account email and order reference when asking about purchases.",
+        icpTitle: "ICP filing status",
+        icpText: "This website is intended to be hosted on Vercel while the mainland China ICP filing is not available. If Project Flow is hosted on a mainland China server, the official ICP filing number must be displayed in the footer before public launch.",
+        footerCopy: "© 2026 Project Flow. Built for focused project execution.",
+        footerIcp: "ICP filing: not applicable while hosted outside mainland China; mainland China server hosting requires an issued ICP filing number.",
+        footerPrivacy: "Privacy Policy",
+        footerTerms: "Terms of Service"
       },
       zh: {
         documentTitle: "Project Flow | 可视化项目时间线",
-        metaDescription: "Project Flow 是一款可视化项目时间线工具，用节点、分支、截止日期和 Done 状态管理真实项目。新用户可免费试用 30 天，永久会员价格为 1.99 美元。",
+        metaDescription: "Project Flow 是一款可视化项目时间线工具，用节点、分支、截止日期和 Done 状态管理真实项目。新用户可免费试用 30 天，永久访问权限当前价格为 US$1.99。",
+        navProduct: "产品",
+        navPricing: "定价",
+        navLegal: "法务",
+        navContact: "联系",
         navWeb: "打开 Web App",
         navDownload: "下载",
-        eyebrow: "30 天免费试用 · 1.99 美元永久会员",
+        eyebrow: "30 天免费试用 · US$1.99 永久访问权限",
         heroTitle: "把复杂项目铺成一张清晰时间线。",
         heroLead: "Project Flow 用节点、分支、截止日期和 Done 状态管理真实项目推进。你可以看到每一步从哪里来、往哪里去，以及今天需要关注什么。",
         heroDownload: "下载 Windows 版",
         heroWeb: "打开网页版",
+        trustTrialTitle: "免费试用",
+        trustTrialText: "新用户可免费试用 30 天，之后需要购买付费访问权限。",
+        trustPriceTitle: "清晰定价",
+        trustPriceText: "一次性永久访问权限当前价格为 US$1.99。",
+        trustRefundTitle: "退款规则",
+        trustRefundText: "退款政策在 checkout 前已公开展示。",
+        trustContactTitle: "支持邮箱",
         imageAlt: "Project Flow 时间线画布截图，展示项目节点、分支连接和 Today 日期列。",
         featuresTitle: "看到整个项目，而不只是下一条任务。",
         featuresLead: "Project Flow 适合创始人、创作者、学生和小团队使用，尤其适合需要比普通待办清单更多上下文的项目。",
@@ -483,23 +967,63 @@
         featureTwoText: "每次 Continue 都可以生成新的分支，保留真实项目推进中的多条可能路径和决策过程。",
         featureThreeTitle: "Done",
         featureThreeText: "完成后打上 Done 标记，让工作被清楚地结束、复盘和归档。",
+        pricingTitle: "定价和退款规则会在购买前清楚展示。",
+        pricingLead: "Project Flow 采用简单的试用和许可模型。支付与 License Key 分发可由 Creem 处理。",
+        pricingLabel: "当前价格",
+        pricingPlan: "永久访问权限",
+        pricingOnce: "一次性",
+        pricingText: "包含授权账号对 Project Flow 付费功能的访问权限，受服务条款、产品可用性和合理技术限制约束。",
+        pricingItemOne: "新用户 30 天免费试用。",
+        pricingItemTwo: "支付后通过 License Key 或账号解锁访问。",
+        pricingItemThree: "如有税费，以 checkout 服务商展示为准。",
+        refundLabel: "退款政策",
+        refundTitle: "清晰且有限",
+        refundText: "如果 License Key 尚未兑换，或存在经确认且无法解决的技术激活问题，可在购买后 7 天内申请退款。重复购买和误用账号等情况由支持团队审核。License Key 已交付或账号已解锁后，除非适用法律另有要求，购买通常视为最终完成。",
+        claimsLabel: "无虚假宣传",
+        claimsTitle: "产品边界",
+        claimsText: "Project Flow 是项目规划和时间线可视化工具。我们不会把它宣传为法律、金融、医疗、数据恢复、企业 SLA 或安全认证产品。",
         downloadTitle: "下载 Project Flow Windows 版",
-        downloadLead: "桌面版适合日常长期使用；网页版保留同一套账号、试用和会员流程。新用户可免费试用 30 天，永久会员可通过支付和 License Key 流程以 1.99 美元解锁。",
+        downloadLead: "桌面版适合日常长期使用；网页版保留同一套账号、试用和会员流程。新用户可免费试用 30 天，永久访问权限可通过支付和 License Key 流程以 US$1.99 解锁。",
         version: "Version 1.0.0 · Windows x64 · 约 68 MB",
         downloadInstaller: "下载安装包",
         downloadWeb: "打开网页版",
-        footerCopy: "© 2026 Project Flow. 为专注的项目执行而构建。"
+        legalTitle: "法务中心",
+        legalLead: "隐私政策和用户服务条款已在本页完整公开，方便用户在注册、购买或兑换 License Key 前查看。",
+        privacyJump: "隐私政策",
+        termsJump: "用户服务条款",
+        contactJump: "联系支持",
+        contactTitle: "联系与合规信息",
+        contactLead: "用户可通过下方公开邮箱联系 Project Flow，处理支持、隐私、账单和法律通知。",
+        supportTitle: "支持邮箱",
+        supportText: "账号、支付、许可、隐私或法律请求请通过邮件联系。购买问题请附上账号邮箱和订单信息。",
+        icpTitle: "ICP备案状态",
+        icpText: "在中国内地 ICP 备案尚未完成前，本网站计划托管在 Vercel。如果 Project Flow 使用中国内地服务器公开访问，必须在页脚展示真实有效的 ICP 备案号。",
+        footerCopy: "© 2026 Project Flow. 为专注的项目执行而构建。",
+        footerIcp: "ICP备案：当前托管在中国内地以外时不适用；如使用中国内地服务器，必须展示已取得的 ICP 备案号。",
+        footerPrivacy: "隐私政策",
+        footerTerms: "用户服务条款"
       }
     };
 
     const fallbackLang = "en";
-    const storedLang = localStorage.getItem("project-flow-site-lang");
+    const languageStorage = {
+      get(){
+        try{return window.localStorage.getItem("project-flow-site-lang");}
+        catch{return null;}
+      },
+      set(value){
+        try{window.localStorage.setItem("project-flow-site-lang",value);}
+        catch{}
+      }
+    };
+    const storedLang = languageStorage.get();
     const initialLang = storedLang === "zh" ? "zh" : fallbackLang;
 
     function setLanguage(lang){
       const nextLang = lang === "zh" ? "zh" : "en";
       const copy = COPY[nextLang];
       document.documentElement.lang = nextLang === "zh" ? "zh-CN" : "en";
+      document.documentElement.dataset.siteLang = nextLang;
       document.title = copy.documentTitle;
       const metaDescription = document.querySelector('meta[name="description"]');
       if(metaDescription) metaDescription.setAttribute("content", copy.metaDescription);
@@ -515,7 +1039,7 @@
         const active = button.getAttribute("data-lang") === nextLang;
         button.setAttribute("aria-pressed", active ? "true" : "false");
       });
-      localStorage.setItem("project-flow-site-lang", nextLang);
+      languageStorage.set(nextLang);
     }
 
     document.querySelectorAll("[data-lang]").forEach((button)=>{

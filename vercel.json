@@ -1,0 +1,24 @@
+{
+  "rewrites": [
+    {
+      "has": [
+        {
+          "type": "host",
+          "value": "pmpro.com.cn"
+        }
+      ],
+      "source": "/",
+      "destination": "/website/index.html"
+    },
+    {
+      "has": [
+        {
+          "type": "host",
+          "value": "www.pmpro.com.cn"
+        }
+      ],
+      "source": "/",
+      "destination": "/website/index.html"
+    }
+  ]
+}
