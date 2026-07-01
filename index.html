@@ -424,8 +424,25 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
 .auth-field input{height:40px;border-radius:8px;border:1px solid #30363d;background:#0d1117;color:#e6edf3;
   padding:0 12px;font-size:13px;outline:none}
 .auth-field input:focus{border-color:#388bfd}
+.auth-consent{display:flex;align-items:flex-start;gap:9px;margin:2px 0 14px;font-size:12px;color:#8b949e;line-height:1.55}
+.auth-consent input{width:16px;height:16px;margin-top:2px;accent-color:#388bfd;flex-shrink:0}
+.auth-consent button{border:0;background:transparent;color:#58a6ff;font:inherit;padding:0;cursor:pointer}
+.auth-consent button:hover{text-decoration:underline}
 .auth-error{background:#2d0f0f;border:1px solid #5c1a1a;color:#f87171;border-radius:8px;padding:8px 10px;font-size:12px;margin-bottom:10px}
 .auth-note{font-size:11px;color:#484f58;line-height:1.55;margin-top:12px}
+.legal-modal{width:760px;max-width:94vw;max-height:86vh;background:#fff;color:#111827;border:1px solid #d1d5db;border-radius:12px;padding:0;overflow:hidden}
+.legal-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:22px 26px;border-bottom:1px solid #e5e7eb}
+.legal-head h2{font-size:20px;color:#111827;margin:0 0 5px}
+.legal-head p{font-size:12px;color:#6b7280;margin:0;line-height:1.5}
+.legal-close{border:1px solid #d1d5db;background:#fff;color:#111827;border-radius:8px;padding:7px 12px;font-size:13px;cursor:pointer}
+.legal-close:hover{background:#f3f4f6}
+.legal-body{padding:24px 30px;overflow:auto;max-height:calc(86vh - 92px)}
+.legal-body h3{font-size:15px;color:#111827;margin:24px 0 8px}
+.legal-body h3:first-child{margin-top:0}
+.legal-body p,.legal-body li{font-size:13px;color:#1f2937;line-height:1.75}
+.legal-body p{margin:0 0 12px}
+.legal-body ul{margin:0 0 14px 18px;padding:0}
+.legal-body strong{color:#111827}
 .acct-btn{display:flex;align-items:center;gap:6px}
 .ent-pill{font-size:11px;color:#8b949e;background:#21262d;border:1px solid #30363d;border-radius:999px;padding:5px 10px;white-space:nowrap}
 .ent-pill.ok{color:#3fb950;border-color:#23863680;background:#0a2318}
@@ -721,10 +738,143 @@ const GUIDE_LOCAL_PREFIX='pf_seen_guide_';
 const PF_CONFIG = {
   supabaseUrl: window.PROJECT_FLOW_SUPABASE_URL || 'https://pksjwrajpyobkzxlqmrz.supabase.co',
   supabaseAnonKey: window.PROJECT_FLOW_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBrc2p3cmFqcHlvYmt6eGxxbXJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI4MDUyMDIsImV4cCI6MjA5ODM4MTIwMn0.4bFHO0x4IKztYs52mo004xUk9BQV1idEc3Vxt_tUxzg',
+  supportEmail: window.PROJECT_FLOW_SUPPORT_EMAIL || 'support@projectflow.app',
 };
 const supabaseClient = (PF_CONFIG.supabaseUrl&&PF_CONFIG.supabaseAnonKey&&window.supabase)
   ? window.supabase.createClient(PF_CONFIG.supabaseUrl,PF_CONFIG.supabaseAnonKey)
   : null;
+
+const LEGAL_DOCS={
+  privacy:{
+    title:'Privacy Policy',
+    updated:'Last updated: July 1, 2026',
+    intro:'This Privacy Policy explains how Project Flow collects, uses, stores, and protects information when you create an account, use the workflow planner, start a free trial, purchase lifetime access, or redeem a Creem license key.',
+    sections:[
+      ['1. Who We Are',[
+        'Project Flow is a visual project and workflow planning product. For privacy questions, account requests, or data requests, contact us at '+PF_CONFIG.supportEmail+'.'
+      ]],
+      ['2. Information We Collect',[
+        'Account information, including your email address, authentication identifiers, trial status, membership status, and basic profile settings.',
+        'Workspace information that you choose to create in Project Flow, including project names, tasks, dates, statuses, layout preferences, guide state, and sync metadata.',
+        'Payment and license information necessary to verify purchases, including Creem checkout references, license key verification results, product identifiers, payment status, and related webhook records.',
+        'Technical information such as browser type, device type, app version, timestamps, security logs, and error logs needed to operate, secure, and improve the service.'
+      ]],
+      ['3. Information We Do Not Intentionally Collect',[
+        'We do not intentionally collect payment card numbers, bank details, or full payment credentials. Payments are processed by Creem as merchant of record or payment processor, and Creem may collect payment information under its own policies.',
+        'We do not ask you to upload government identifiers, health records, or other sensitive personal information into Project Flow.'
+      ]],
+      ['4. How We Use Information',[
+        'To create and secure your account, authenticate you, provide the 30-day free trial, and manage access to lifetime membership.',
+        'To save and sync your workspace across devices when cloud sync is enabled.',
+        'To process checkout redirects, verify Creem license keys, receive Creem webhook events, prevent fraud, and provide purchase-related support.',
+        'To maintain the product, debug issues, improve reliability, and communicate important account, payment, security, or policy updates.'
+      ]],
+      ['5. Storage and Service Providers',[
+        'Supabase is used for authentication, profile records, membership status, and cloud workspace storage.',
+        'Creem is used for checkout, payment handling, license key delivery, and purchase verification.',
+        'Vercel, GitHub Pages, or similar static hosting providers may serve the frontend application.',
+        'If you connect GitHub Gist sync, workspace data may be stored in your GitHub account according to GitHub settings and policies.'
+      ]],
+      ['6. Local Data and Cloud Sync',[
+        'Project Flow may store workspace data locally in your browser or desktop app. If you sign in and cloud sync is active, workspace data can also be stored in Supabase so you can access it on multiple devices.',
+        'You are responsible for the content you place in your projects. Avoid entering secrets, passwords, payment credentials, or highly sensitive personal data into project titles or task notes.'
+      ]],
+      ['7. Sharing and Disclosure',[
+        'We do not sell your personal information.',
+        'We may share limited information with service providers that help us operate Project Flow, process payments, verify licenses, prevent abuse, comply with law, or protect the security of the service.',
+        'We may disclose information if required by law, court order, payment dispute process, fraud investigation, or to protect rights, safety, and product integrity.'
+      ]],
+      ['8. Retention',[
+        'We keep account, trial, membership, license, and workspace records for as long as needed to provide the service, comply with legal obligations, resolve disputes, enforce agreements, and maintain backups.',
+        'You may request account or workspace deletion by contacting '+PF_CONFIG.supportEmail+'. Some purchase, tax, accounting, abuse-prevention, or legal records may be retained where required.'
+      ]],
+      ['9. Security',[
+        'We use reasonable administrative, technical, and organizational safeguards, including authentication controls and server-side handling of private Creem and Supabase keys.',
+        'No system is perfectly secure. You are responsible for keeping your password, email account, device, and any connected GitHub token secure.'
+      ]],
+      ['10. Your Choices and Rights',[
+        'You may access, update, export, or delete certain workspace data through the app. You may also contact us to request access, correction, deletion, or other privacy-related assistance.',
+        'Privacy rights vary by location. We will respond to valid requests as required by applicable law.'
+      ]],
+      ['11. Children',[
+        'Project Flow is not intended for children under 13, and we do not knowingly collect personal information from children under 13.'
+      ]],
+      ['12. International Use',[
+        'If you use Project Flow from outside the country where our providers operate, your information may be processed in other jurisdictions where privacy laws may differ from yours.'
+      ]],
+      ['13. Changes to This Policy',[
+        'We may update this Privacy Policy from time to time. Material changes will be reflected by updating the date above and, when appropriate, by providing additional notice in the app or by email.'
+      ]]
+    ]
+  },
+  terms:{
+    title:'Terms of Service',
+    updated:'Last updated: July 1, 2026',
+    intro:'These Terms of Service govern your access to and use of Project Flow, including the web app, desktop app, account system, free trial, lifetime membership, and Creem-powered checkout and license key flow.',
+    sections:[
+      ['1. Acceptance of Terms',[
+        'By creating an account, signing in, checking the agreement box, using Project Flow, purchasing lifetime access, or redeeming a license key, you agree to these Terms of Service and the Privacy Policy.',
+        'If you do not agree, do not use Project Flow.'
+      ]],
+      ['2. Product Description',[
+        'Project Flow is a workflow and project planning tool that helps users organize projects, tasks, branches, deadlines, progress, and workspace views.',
+        'Some data may be stored locally on your device, and account-based cloud sync may store workspace data through Supabase.'
+      ]],
+      ['3. Account Registration and Security',[
+        'You must provide accurate account information and keep your login credentials secure.',
+        'You are responsible for all activity under your account, including activity from devices where you remain signed in.',
+        'You must notify us at '+PF_CONFIG.supportEmail+' if you believe your account has been compromised.'
+      ]],
+      ['4. Free Trial and Lifetime Membership',[
+        'New users receive a 30-day free trial unless otherwise stated in the product interface.',
+        'After the trial, continued access to paid features may require a one-time lifetime membership purchase currently offered at 9.9 yuan, unless pricing is changed or a promotional offer applies.',
+        'Lifetime membership means lifetime access to the paid Project Flow product features for the account or license covered by the purchase, subject to these Terms, product availability, lawful use, and reasonable technical limitations. It does not guarantee indefinite support for every old operating system, browser, third-party integration, or discontinued external provider.'
+      ]],
+      ['5. Payments, Creem Checkout, and License Keys',[
+        'Payments are processed through Creem. Creem may handle checkout, taxes where applicable, receipts, license key delivery, customer portal features, and payment-related communications.',
+        'After purchase, Creem may provide a License Key in the order confirmation page, by email, or through the customer portal. You may redeem the key in Project Flow to unlock lifetime access.',
+        'We do not store your full card details or payment credentials in the Project Flow frontend. Payment processing is subject to Creem policies and any checkout terms shown by Creem.',
+        'You are responsible for entering accurate account and payment information during checkout.'
+      ]],
+      ['6. Refunds and Billing Support',[
+        'Unless required by applicable law or stated otherwise at checkout, purchases of lifetime access are generally final after the license key or account unlock has been delivered.',
+        'For duplicate purchases, failed activation, mistaken account issues, or payment questions, contact '+PF_CONFIG.supportEmail+' with your account email and relevant Creem order information.'
+      ]],
+      ['7. License and Acceptable Use',[
+        'Subject to these Terms, we grant you a limited, non-exclusive, non-transferable license to use Project Flow for personal or internal business planning.',
+        'You may not abuse the service, attempt to bypass payment or license checks, scrape or attack the backend, reverse engineer server-side access controls, resell accounts or license keys without permission, or use Project Flow for unlawful activity.',
+        'You may not upload or store content that infringes others rights, contains malware, violates law, or disrupts the service.'
+      ]],
+      ['8. Your Content and Responsibility',[
+        'You retain rights to the project and task content you create. You grant us the limited rights needed to host, sync, display, back up, secure, and support that content as part of providing Project Flow.',
+        'You are responsible for keeping backup copies of important project information. Project Flow is a planning tool and should not be your only record for mission-critical or legally required data.'
+      ]],
+      ['9. Third-Party Services',[
+        'Project Flow may depend on Supabase, Creem, Vercel, GitHub, or other third-party services. Their availability, terms, privacy practices, fees, and outages are outside our direct control.',
+        'If you connect optional services such as GitHub Gist sync, you are responsible for your third-party account settings and tokens.'
+      ]],
+      ['10. Changes, Availability, and Beta Features',[
+        'We may improve, modify, suspend, or discontinue parts of Project Flow. We aim to keep the product useful and stable, but we do not guarantee uninterrupted or error-free operation.',
+        'Some features may be experimental or subject to change, including payment flows, license key handling, desktop features, and sync behavior.'
+      ]],
+      ['11. Termination',[
+        'You may stop using Project Flow at any time. We may suspend or terminate access if you violate these Terms, create risk for the service, fail payment or license verification, or use the product unlawfully.',
+        'Termination may not remove obligations that should reasonably survive, including payment obligations, license restrictions, disclaimers, and limits of liability.'
+      ]],
+      ['12. Disclaimers',[
+        'Project Flow is provided on an as-is and as-available basis to the maximum extent permitted by law.',
+        'We do not warrant that the product will meet every requirement, be uninterrupted, be error-free, or preserve all data under every circumstance.'
+      ]],
+      ['13. Limitation of Liability',[
+        'To the maximum extent permitted by law, Project Flow and its operators will not be liable for indirect, incidental, special, consequential, exemplary, or punitive damages, or for lost profits, lost data, business interruption, or loss of goodwill.',
+        'To the maximum extent permitted by law, our aggregate liability for claims related to Project Flow will not exceed the amount you paid for Project Flow in the 12 months before the claim.'
+      ]],
+      ['14. Contact',[
+        'For legal, privacy, payment, or support questions, contact '+PF_CONFIG.supportEmail+'.'
+      ]]
+    ]
+  }
+};
 
 async function getSessionToken(){
   if(!supabaseClient)return null;
@@ -1977,6 +2127,19 @@ function App(){
 function AuthGate({mode='login',setMode,error,busy,configured=true,onSubmit,loading=false}){
   const [email,setEmail]=useState('');
   const [password,setPassword]=useState('');
+  const [accepted,setAccepted]=useState(false);
+  const [legalDoc,setLegalDoc]=useState(null);
+  const [localErr,setLocalErr]=useState('');
+  const openLegal=(key,e)=>{e.preventDefault();setLegalDoc(key);};
+  const submit=e=>{
+    e.preventDefault();
+    if(!accepted){
+      setLocalErr('Please review and accept the Privacy Policy and Terms of Service before continuing.');
+      return;
+    }
+    setLocalErr('');
+    onSubmit({email,password});
+  };
   if(loading)return(
     <div className="auth-gate"><div className="auth-card"><div className="auth-logo">Project Flow</div><div className="auth-sub">正在连接账户系统...</div></div></div>
   );
@@ -1991,12 +2154,49 @@ function AuthGate({mode='login',setMode,error,busy,configured=true,onSubmit,load
         </div>
         {!configured&&<div className="auth-error">Supabase 尚未配置。请先在页面里填入项目 URL 和 anon key，或完成 README 的部署步骤。</div>}
         {error&&<div className={mode==='signup'&&error.includes('注册成功')?'mp-status ok':'auth-error'}>{error}</div>}
-        <form onSubmit={e=>{e.preventDefault();onSubmit({email,password});}}>
+        {localErr&&<div className="auth-error">{localErr}</div>}
+        <form onSubmit={submit}>
           <div className="auth-field"><label>Email</label><input type="email" value={email} onChange={e=>setEmail(e.target.value)} required autoComplete="email"/></div>
           <div className="auth-field"><label>Password</label><input type="password" value={password} onChange={e=>setPassword(e.target.value)} required minLength="6" autoComplete={mode==='login'?'current-password':'new-password'}/></div>
+          <label className="auth-consent">
+            <input type="checkbox" checked={accepted} onChange={e=>{setAccepted(e.target.checked);if(e.target.checked)setLocalErr('');}}/>
+            <span>
+              I have read and agree to the{' '}
+              <button type="button" onClick={e=>openLegal('privacy',e)}>Privacy Policy</button>
+              {' '}and{' '}
+              <button type="button" onClick={e=>openLegal('terms',e)}>Terms of Service</button>.
+            </span>
+          </label>
           <button className="btn btn-green" style={{width:'100%',height:40}} disabled={busy||!configured}>{busy?'处理中...':mode==='login'?'登录':'注册并开始 30 天试用'}</button>
         </form>
-        <div className="auth-note">账户、试用期和会员状态由 Supabase 后端管理；支付与 License Key 由 Creem 处理。前端不会保存 Creem API Key。</div>
+        <div className="auth-note">
+          账户、试用期和会员状态由 Supabase 后端管理；支付与 License Key 由 Creem 处理。前端不会保存 Creem API Key。Support: <a href={`mailto:${PF_CONFIG.supportEmail}`}>{PF_CONFIG.supportEmail}</a>
+        </div>
+      </div>
+      {legalDoc&&<LegalModal docKey={legalDoc} onClose={()=>setLegalDoc(null)}/>}
+    </div>
+  );
+}
+
+function LegalModal({docKey,onClose}){
+  const doc=LEGAL_DOCS[docKey];
+  if(!doc)return null;
+  return(
+    <div className="mo" style={{zIndex:9800}} onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
+      <div className="mp legal-modal">
+        <div className="legal-head">
+          <div><h2>{doc.title}</h2><p>{doc.updated}</p></div>
+          <button className="legal-close" onClick={onClose}>Close</button>
+        </div>
+        <div className="legal-body">
+          <p><strong>{doc.intro}</strong></p>
+          {doc.sections.map(([title,items])=>(
+            <section key={title}>
+              <h3>{title}</h3>
+              {items.length===1?<p>{items[0]}</p>:<ul>{items.map(item=><li key={item}>{item}</li>)}</ul>}
+            </section>
+          ))}
+        </div>
       </div>
     </div>
   );

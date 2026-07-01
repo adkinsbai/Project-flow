@@ -1,2 +1,3 @@
 window.PROJECT_FLOW_SUPABASE_URL = "https://YOUR_PROJECT.supabase.co";
 window.PROJECT_FLOW_SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
+window.PROJECT_FLOW_SUPPORT_EMAIL = "support@projectflow.app";
