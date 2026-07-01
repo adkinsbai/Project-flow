@@ -1,10 +1,11 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Project Flow | Visual Project Timeline</title>
-  <meta name="description" content="Project Flow 是一款可视化项目流管理工具，用时间线、分支和 Done 标记把复杂项目整理成清晰路径。">
+  <meta name="description" content="Project Flow is a visual project timeline for mapping projects as nodes, branches, deadlines, and Done states. Start with a 30-day free trial, then unlock lifetime access for $1.99.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%230f172a'/%3E%3Ccircle cx='32' cy='32' r='13' fill='%2300b8a9'/%3E%3C/svg%3E">
   <style>
     :root{
       --ink:#0f172a;
@@ -45,6 +46,7 @@
       font-size:16px;
       font-weight:850;
       letter-spacing:0;
+      white-space:nowrap;
     }
     .mark{
       width:28px;
@@ -54,6 +56,7 @@
       display:grid;
       place-items:center;
       background:var(--paper);
+      flex:0 0 auto;
     }
     .mark::after{
       content:"";
@@ -65,7 +68,36 @@
     .nav-actions{
       display:flex;
       align-items:center;
+      justify-content:flex-end;
       gap:10px;
+      min-width:0;
+    }
+    .lang-switch{
+      display:flex;
+      align-items:center;
+      padding:3px;
+      border:1px solid rgba(15,23,42,.18);
+      border-radius:999px;
+      background:rgba(247,251,255,.82);
+      flex:0 0 auto;
+    }
+    .lang-switch button{
+      min-width:44px;
+      min-height:34px;
+      border:0;
+      border-radius:999px;
+      padding:8px 12px;
+      color:rgba(15,23,42,.62);
+      background:transparent;
+      font:inherit;
+      font-size:13px;
+      font-weight:850;
+      letter-spacing:0;
+      cursor:pointer;
+    }
+    .lang-switch button[aria-pressed="true"]{
+      color:var(--paper);
+      background:var(--ink);
     }
     .btn{
       min-height:44px;
@@ -78,6 +110,7 @@
       font-size:14px;
       font-weight:800;
       transition:transform .18s ease,background .18s ease,border-color .18s ease,color .18s ease;
+      white-space:nowrap;
     }
     .btn:hover{transform:translateY(-2px)}
     .btn.primary{
@@ -121,6 +154,7 @@
       border-radius:50%;
       background:var(--mint);
       box-shadow:0 0 0 7px rgba(0,184,169,.14);
+      flex:0 0 auto;
     }
     h1{
       margin:24px auto 22px;
@@ -131,7 +165,7 @@
     }
     .lead{
       margin:0 auto;
-      max-width:690px;
+      max-width:720px;
       color:rgba(15,23,42,.68);
       font-size:clamp(17px,2vw,22px);
       line-height:1.62;
@@ -201,7 +235,7 @@
       gap:14px;
     }
     .feature{
-      min-height:178px;
+      min-height:190px;
       padding:26px;
       border:1px solid rgba(15,23,42,.13);
       border-radius:8px;
@@ -238,7 +272,7 @@
     .download h2{color:var(--paper)}
     .download p{
       margin:16px 0 0;
-      max-width:680px;
+      max-width:700px;
       color:rgba(247,251,255,.72);
       line-height:1.72;
     }
@@ -252,6 +286,7 @@
       margin-bottom:14px;
       color:rgba(247,251,255,.66);
       font-size:13px;
+      line-height:1.5;
     }
     .download .btn{width:100%}
     .download .btn.primary{
@@ -280,6 +315,7 @@
       gap:18px;
       color:rgba(15,23,42,.58);
       font-size:14px;
+      line-height:1.6;
     }
     footer a{font-weight:800;color:var(--ink)}
     @media (prefers-reduced-motion:reduce){
@@ -292,10 +328,21 @@
       .features{grid-template-columns:1fr}
       .feature{min-height:0}
     }
-    @media (max-width:620px){
+    @media (max-width:680px){
       .nav,.hero,main section,footer{width:min(100% - 28px,1200px)}
-      .nav{padding:15px 0}
+      .nav{
+        padding:15px 0;
+        align-items:flex-start;
+      }
+      .nav-actions{
+        flex-wrap:wrap;
+        gap:8px;
+      }
       .nav-actions .ghost{display:none}
+      .lang-switch button{
+        min-width:40px;
+        padding:8px 10px;
+      }
       .hero{text-align:left;padding-bottom:42px}
       .hero-actions{justify-content:flex-start}
       .hero-actions .btn{width:100%}
@@ -312,54 +359,58 @@
 </head>
 <body>
   <div class="page">
-    <nav class="nav" aria-label="主导航">
-      <a class="brand" href="#top" aria-label="Project Flow 首页">
+    <nav class="nav" aria-label="Main navigation">
+      <a class="brand" href="#top" aria-label="Project Flow home">
         <span class="mark" aria-hidden="true"></span>
         <span>Project Flow</span>
       </a>
       <div class="nav-actions">
-        <a class="btn ghost" href="https://project-flow-delta.vercel.app">打开 Web App</a>
-        <a class="btn primary" href="#download">下载</a>
+        <div class="lang-switch" aria-label="Language switcher">
+          <button type="button" data-lang="en" aria-pressed="true">EN</button>
+          <button type="button" data-lang="zh" aria-pressed="false">中文</button>
+        </div>
+        <a class="btn ghost" data-i18n="navWeb" href="https://project-flow-delta.vercel.app">Open Web App</a>
+        <a class="btn primary" data-i18n="navDownload" href="#download">Download</a>
       </div>
     </nav>
 
     <header class="hero" id="top">
-      <div class="eyebrow"><span class="pulse" aria-hidden="true"></span> 30 天免费试用 · 9.9 元永久会员</div>
-      <h1>把复杂项目铺成一张清晰时间线。</h1>
-      <p class="lead">Project Flow 用节点、分支和 Done 标记管理真实项目推进。你可以看到每一步从哪里来、往哪里去，以及今天该收束什么。</p>
+      <div class="eyebrow"><span class="pulse" aria-hidden="true"></span><span data-i18n="eyebrow">30-day free trial · $1.99 lifetime access</span></div>
+      <h1 data-i18n="heroTitle">Turn complex projects into a clear visual timeline.</h1>
+      <p class="lead" data-i18n="heroLead">Project Flow helps you map work as nodes, branches, deadlines, and Done states, so every project shows where it started, what changed, and what needs attention today.</p>
       <div class="hero-actions">
-        <a class="btn primary" href="https://github.com/adkinsbai/Project-flow/releases/download/v1.0.0/Project-Flow-1.0.0-x64.exe">下载 Windows 版</a>
-        <a class="btn ghost" href="https://project-flow-delta.vercel.app">直接使用网页版</a>
+        <a class="btn primary" data-i18n="heroDownload" href="https://github.com/adkinsbai/Project-flow/releases/download/v1.0.0/Project-Flow-1.0.0-x64.exe">Download for Windows</a>
+        <a class="btn ghost" data-i18n="heroWeb" href="https://project-flow-delta.vercel.app">Open Web App</a>
       </div>
     </header>
 
-    <div class="showcase" aria-label="Project Flow 产品截图">
+    <div class="showcase" aria-label="Project Flow product screenshot">
       <div class="shot-shell">
-        <img class="shot" src="./assets/project-flow-canvas.png" alt="Project Flow 时间线画布截图，展示多个项目节点、分支连接和 Today 日期列。">
+        <img class="shot" src="./assets/project-flow-canvas.png" data-i18n-alt="imageAlt" alt="Project Flow timeline canvas showing project nodes, branch connections, and the Today date column.">
       </div>
     </div>
 
     <main>
       <section id="features">
         <div class="section-title">
-          <h2>每天打开，就知道项目在哪里。</h2>
-          <p>少一点表格感，多一点空间感。Project Flow 把项目的推进路径直接放在画布上。</p>
+          <h2 data-i18n="featuresTitle">See the whole project, not just the next task.</h2>
+          <p data-i18n="featuresLead">Project Flow is designed for founders, makers, students, and small teams who need more context than a simple todo list.</p>
         </div>
         <div class="features">
           <article class="feature">
             <span>01</span>
-            <h3>Setup</h3>
-            <p>把一个想法放进画布，先确定目标、边界和开始节点。</p>
+            <h3 data-i18n="featureOneTitle">Setup</h3>
+            <p data-i18n="featureOneText">Start a project by defining the goal, boundary, and first node, then place it directly on the canvas.</p>
           </article>
           <article class="feature">
             <span>02</span>
-            <h3>Continue</h3>
-            <p>每次推进都能长出新的分支，保留真实项目里的多条可能路径。</p>
+            <h3 data-i18n="featureTwoTitle">Continue</h3>
+            <p data-i18n="featureTwoText">Every continuation can create a branch, preserving the real options and decisions that appear during execution.</p>
           </article>
           <article class="feature">
             <span>03</span>
-            <h3>Done</h3>
-            <p>完成后打上 Done 标记，让工作被清楚地结束、复盘和归档。</p>
+            <h3 data-i18n="featureThreeTitle">Done</h3>
+            <p data-i18n="featureThreeText">Mark work as Done when it is finished, so completed paths are easy to review, close, and archive.</p>
           </article>
         </div>
       </section>
@@ -367,22 +418,111 @@
       <section id="download">
         <div class="download">
           <div>
-            <h2>下载 Project Flow for Windows</h2>
-            <p>桌面版适合长期放在本机使用；网页端保留同一套账户、试用和会员体系。注册后可免费试用 30 天，永久会员通过 Creem 和 License Key 解锁。</p>
+            <h2 data-i18n="downloadTitle">Download Project Flow for Windows</h2>
+            <p data-i18n="downloadLead">Use the desktop app for daily planning, or open the web app with the same account, trial, and membership flow. New users get a 30-day free trial. Lifetime access is available for $1.99 through the payment and license key flow.</p>
           </div>
           <div class="download-panel">
-            <div class="version">Version 1.0.0 · Windows x64 · 约 68 MB</div>
-            <a class="btn primary" href="https://github.com/adkinsbai/Project-flow/releases/download/v1.0.0/Project-Flow-1.0.0-x64.exe">下载安装包</a>
-            <a class="btn ghost" href="https://project-flow-delta.vercel.app">打开网页版</a>
+            <div class="version" data-i18n="version">Version 1.0.0 · Windows x64 · about 68 MB</div>
+            <a class="btn primary" data-i18n="downloadInstaller" href="https://github.com/adkinsbai/Project-flow/releases/download/v1.0.0/Project-Flow-1.0.0-x64.exe">Download Installer</a>
+            <a class="btn ghost" data-i18n="downloadWeb" href="https://project-flow-delta.vercel.app">Open Web App</a>
           </div>
         </div>
       </section>
     </main>
 
     <footer>
-      <div>© 2026 Project Flow. Built for focused project execution.</div>
+      <div data-i18n="footerCopy">© 2026 Project Flow. Built for focused project execution.</div>
       <div><a href="mailto:postmaster@pmpro.com.cn">postmaster@pmpro.com.cn</a></div>
     </footer>
   </div>
+
+  <script>
+    const COPY = {
+      en: {
+        documentTitle: "Project Flow | Visual Project Timeline",
+        metaDescription: "Project Flow is a visual project timeline for mapping projects as nodes, branches, deadlines, and Done states. Start with a 30-day free trial, then unlock lifetime access for $1.99.",
+        navWeb: "Open Web App",
+        navDownload: "Download",
+        eyebrow: "30-day free trial · $1.99 lifetime access",
+        heroTitle: "Turn complex projects into a clear visual timeline.",
+        heroLead: "Project Flow helps you map work as nodes, branches, deadlines, and Done states, so every project shows where it started, what changed, and what needs attention today.",
+        heroDownload: "Download for Windows",
+        heroWeb: "Open Web App",
+        imageAlt: "Project Flow timeline canvas showing project nodes, branch connections, and the Today date column.",
+        featuresTitle: "See the whole project, not just the next task.",
+        featuresLead: "Project Flow is designed for founders, makers, students, and small teams who need more context than a simple todo list.",
+        featureOneTitle: "Setup",
+        featureOneText: "Start a project by defining the goal, boundary, and first node, then place it directly on the canvas.",
+        featureTwoTitle: "Continue",
+        featureTwoText: "Every continuation can create a branch, preserving the real options and decisions that appear during execution.",
+        featureThreeTitle: "Done",
+        featureThreeText: "Mark work as Done when it is finished, so completed paths are easy to review, close, and archive.",
+        downloadTitle: "Download Project Flow for Windows",
+        downloadLead: "Use the desktop app for daily planning, or open the web app with the same account, trial, and membership flow. New users get a 30-day free trial. Lifetime access is available for $1.99 through the payment and license key flow.",
+        version: "Version 1.0.0 · Windows x64 · about 68 MB",
+        downloadInstaller: "Download Installer",
+        downloadWeb: "Open Web App",
+        footerCopy: "© 2026 Project Flow. Built for focused project execution."
+      },
+      zh: {
+        documentTitle: "Project Flow | 可视化项目时间线",
+        metaDescription: "Project Flow 是一款可视化项目时间线工具，用节点、分支、截止日期和 Done 状态管理真实项目。新用户可免费试用 30 天，永久会员价格为 1.99 美元。",
+        navWeb: "打开 Web App",
+        navDownload: "下载",
+        eyebrow: "30 天免费试用 · 1.99 美元永久会员",
+        heroTitle: "把复杂项目铺成一张清晰时间线。",
+        heroLead: "Project Flow 用节点、分支、截止日期和 Done 状态管理真实项目推进。你可以看到每一步从哪里来、往哪里去，以及今天需要关注什么。",
+        heroDownload: "下载 Windows 版",
+        heroWeb: "打开网页版",
+        imageAlt: "Project Flow 时间线画布截图，展示项目节点、分支连接和 Today 日期列。",
+        featuresTitle: "看到整个项目，而不只是下一条任务。",
+        featuresLead: "Project Flow 适合创始人、创作者、学生和小团队使用，尤其适合需要比普通待办清单更多上下文的项目。",
+        featureOneTitle: "Setup",
+        featureOneText: "新建项目时先确定目标、边界和开始节点，再把它放到画布上。",
+        featureTwoTitle: "Continue",
+        featureTwoText: "每次 Continue 都可以生成新的分支，保留真实项目推进中的多条可能路径和决策过程。",
+        featureThreeTitle: "Done",
+        featureThreeText: "完成后打上 Done 标记，让工作被清楚地结束、复盘和归档。",
+        downloadTitle: "下载 Project Flow Windows 版",
+        downloadLead: "桌面版适合日常长期使用；网页版保留同一套账号、试用和会员流程。新用户可免费试用 30 天，永久会员可通过支付和 License Key 流程以 1.99 美元解锁。",
+        version: "Version 1.0.0 · Windows x64 · 约 68 MB",
+        downloadInstaller: "下载安装包",
+        downloadWeb: "打开网页版",
+        footerCopy: "© 2026 Project Flow. 为专注的项目执行而构建。"
+      }
+    };
+
+    const fallbackLang = "en";
+    const storedLang = localStorage.getItem("project-flow-site-lang");
+    const initialLang = storedLang === "zh" ? "zh" : fallbackLang;
+
+    function setLanguage(lang){
+      const nextLang = lang === "zh" ? "zh" : "en";
+      const copy = COPY[nextLang];
+      document.documentElement.lang = nextLang === "zh" ? "zh-CN" : "en";
+      document.title = copy.documentTitle;
+      const metaDescription = document.querySelector('meta[name="description"]');
+      if(metaDescription) metaDescription.setAttribute("content", copy.metaDescription);
+      document.querySelectorAll("[data-i18n]").forEach((node)=>{
+        const key = node.getAttribute("data-i18n");
+        if(copy[key]) node.textContent = copy[key];
+      });
+      document.querySelectorAll("[data-i18n-alt]").forEach((node)=>{
+        const key = node.getAttribute("data-i18n-alt");
+        if(copy[key]) node.setAttribute("alt", copy[key]);
+      });
+      document.querySelectorAll("[data-lang]").forEach((button)=>{
+        const active = button.getAttribute("data-lang") === nextLang;
+        button.setAttribute("aria-pressed", active ? "true" : "false");
+      });
+      localStorage.setItem("project-flow-site-lang", nextLang);
+    }
+
+    document.querySelectorAll("[data-lang]").forEach((button)=>{
+      button.addEventListener("click",()=>setLanguage(button.getAttribute("data-lang")));
+    });
+
+    setLanguage(initialLang);
+  </script>
 </body>
 </html>
