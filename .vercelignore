@@ -7,3 +7,5 @@ supabase/
 scripts/
 .agents/
 .codex/
+website-deploy.zip
+website/downloads/*.exe
