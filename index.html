@@ -66,6 +66,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
 .pcnt{font-size:10px;color:var(--su);background:var(--dim);
   border-radius:10px;padding:1px 7px;transition:all .3s}
 .pcnt.all-done{background:#052e16;color:var(--green)}
+.pdone-label{font-size:9px;color:var(--green);border:1px solid #166534;
+  border-radius:999px;padding:1px 6px;background:#052e16;white-space:nowrap}
 .sb-add{display:flex;align-items:center;gap:7px;padding:6px 10px;border-radius:8px;
   cursor:pointer;background:none;border:none;color:var(--su);font-size:12px;
   width:100%;margin-top:5px;transition:color .1s,background .1s;text-align:left}
@@ -313,6 +315,48 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
 .stat-item.ongoing .stat-value{color:#60a5fa}
 .stat-item.donestat .stat-value{color:#4ade80}
 .stat-tag{font-size:8.5px;color:var(--su);text-align:center}
+
+.today-focus{
+  position:absolute;left:16px;top:16px;z-index:320;
+  width:258px;background:rgba(13,17,23,.92);
+  border:1px solid var(--bd);border-radius:12px;
+  padding:12px;backdrop-filter:blur(12px);
+  box-shadow:0 18px 50px rgba(0,0,0,.28)}
+.tf-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.tf-title{font-size:12px;font-weight:800;color:#e6edf3;letter-spacing:.02em}
+.tf-sub{font-size:10px;color:#58a6ff;background:rgba(56,139,253,.12);
+  border:1px solid rgba(56,139,253,.22);border-radius:999px;padding:2px 7px}
+.tf-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:10px}
+.tf-stat{background:#0f1724;border:1px solid rgba(255,255,255,.06);
+  border-radius:8px;padding:7px 8px}
+.tf-num{font-size:18px;font-weight:800;line-height:1;color:#e6edf3;
+  font-variant-numeric:tabular-nums}
+.tf-label{font-size:9px;color:var(--su);margin-top:4px;white-space:nowrap}
+.tf-stat.hot .tf-num{color:#f87171}
+.tf-stat.done .tf-num{color:#4ade80}
+.tf-actions{display:flex;gap:7px}
+.tf-actions .btn{flex:1;padding:6px 8px}
+.tf-next{font-size:10.5px;color:var(--mu);margin-top:8px;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap}
+.sync-retry{padding:5px 9px}
+.toast{
+  position:fixed;left:50%;bottom:78px;transform:translateX(-50%);
+  z-index:9200;background:#161b22;border:1px solid #30363d;color:#e6edf3;
+  border-radius:999px;padding:8px 14px;font-size:12px;
+  box-shadow:0 14px 44px rgba(0,0,0,.45)}
+.done-summary-chip,.project-done-badge{
+  display:inline-flex;align-items:center;gap:4px;border:1px solid #166534;
+  background:#052e16;color:#4ade80;border-radius:999px;font-size:10px;
+  padding:2px 7px;line-height:1.35}
+.done-summary-chip{cursor:pointer;margin-top:4px;width:max-content}
+.done-summary-chip:hover{filter:brightness(1.15)}
+.ddi:disabled{opacity:.42;cursor:not-allowed}
+.summary-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.summary-item{background:#0d1117;border:1px solid #30363d;border-radius:10px;padding:10px}
+.summary-k{font-size:10px;color:#8b949e;margin-bottom:4px}
+.summary-v{font-size:17px;font-weight:800;color:#e6edf3}
+.conflict-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:18px;flex-wrap:wrap}
+.conflict-note{font-size:11px;color:#8b949e;line-height:1.6;margin-top:8px}
 
 /* ── AI bar ── */
 .ai-bar{
@@ -934,8 +978,57 @@ async function verifyToken(token){
   if(!r.ok)throw new Error('Token 无效');return r.json();
 }
 
-function cloudStatusText(status){
-  return status==='syncing'?'账号同步中':status==='ok'?'账号云端已保存':status==='error'?'账号同步失败':'等待账号同步';
+function stableValue(v){
+  if(Array.isArray(v))return v.map(stableValue);
+  if(v&&typeof v==='object'){
+    return Object.keys(v).sort().reduce((acc,k)=>{
+      if(k==='lastCloudSavedAt'||k==='clientUpdatedAt'||k==='workspaceHash')return acc;
+      acc[k]=stableValue(v[k]);return acc;
+    },{});
+  }
+  return v;
+}
+function hashString(str){
+  let h=2166136261;
+  for(let i=0;i<str.length;i++){
+    h^=str.charCodeAt(i);
+    h+=(h<<1)+(h<<4)+(h<<7)+(h<<8)+(h<<24);
+  }
+  return (h>>>0).toString(16);
+}
+function workspaceHash(data){
+  return hashString(JSON.stringify(stableValue({
+    nodes:data?.nodes||{},
+    manPos:data?.manPos||{},
+    laneOffsets:data?.laneOffsets||{},
+    selRoot:data?.selRoot||'',
+    pan:data?.pan||{},
+    scale:data?.scale||1,
+    hideDone:!!data?.hideDone
+  })));
+}
+function hasWorkspaceData(data){
+  return !!data?.nodes&&Object.keys(data.nodes).length>0;
+}
+function fmtClock(ts){
+  if(!ts)return '';
+  const d=new Date(ts);
+  if(Number.isNaN(d.getTime()))return '';
+  return d.toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit',hour12:false});
+}
+function cloudErrorLabel(err){
+  const msg=(err?.message||String(err||'')).toLowerCase();
+  if(typeof navigator!=='undefined'&&!navigator.onLine)return '网络';
+  if(msg.includes('jwt')||msg.includes('401')||msg.includes('unauthorized')||msg.includes('未登录'))return '未登录';
+  if(msg.includes('network')||msg.includes('fetch'))return '网络';
+  return '服务错误';
+}
+function cloudStatusText(status,lastSavedAt,errorLabel){
+  if(status==='syncing')return '同步中';
+  if(status==='ok')return `已保存 ${fmtClock(lastSavedAt)||''}`.trim();
+  if(status==='error')return `同步失败：${errorLabel||'服务错误'}`;
+  if(status==='pending')return '本地有变更，等待同步';
+  return '本地保存';
 }
 
 const _saved=(()=>{
@@ -1184,6 +1277,11 @@ function App(){
   const [savedFlash,setSavedFlash]=useState(false);
   const [timeView]=useState(true);
   const [hideDone,setHideDone]=useState(!!_saved?.hideDone);
+  const [lastCloudSavedAt,setLastCloudSavedAt]=useState(_saved?.lastCloudSavedAt||null);
+  const [cloudError,setCloudError]=useState('');
+  const [conflict,setConflict]=useState(null);
+  const [toast,setToast]=useState('');
+  const [summaryRoot,setSummaryRoot]=useState(null);
 
   const currentUser=session?.user||null;
   const entitlement=profileBundle?.entitlement||null;
@@ -1396,6 +1494,10 @@ function App(){
   const saveTimer=useRef(null);
   const cloudTimer=useRef(null);
   const cloudLoadedRef=useRef(false);
+  const syncPausedRef=useRef(false);
+  const localHadSavedDataRef=useRef(!!_saved?.nodes);
+  const lastSyncedHashRef=useRef(_saved?.workspaceHash||null);
+  const pendingFocusRef=useRef(null);
   const timeViewRef=useRef(false);
   const dragHoverDayRef=useRef(null);
 
@@ -1405,55 +1507,23 @@ function App(){
   useEffect(()=>{timeViewRef.current=timeView;},[timeView]);
   useEffect(()=>{panXYRef.current=pan;},[pan]);
 
-  /* Auto-save */
-  useEffect(()=>{
-    clearTimeout(saveTimer.current);
-    saveTimer.current=setTimeout(()=>{
-      try{
-        localStorage.setItem(SAVE_KEY,JSON.stringify({nodes,manPos,laneOffsets,selRoot,pan,scale,timeView:true,hideDone}));
-        setSavedFlash(true);setTimeout(()=>setSavedFlash(false),1800);
-      }catch{}
-    },800);
-  },[nodes,manPos,laneOffsets,selRoot,pan,scale,hideDone]);
+  const showToast=useCallback(msg=>{
+    setToast(msg);
+    clearTimeout(showToast._t);
+    showToast._t=setTimeout(()=>setToast(''),2200);
+  },[]);
 
-  useEffect(()=>{
-    if(!session)return;
-    cloudLoadedRef.current=false;
-    setCloudStatus('syncing');
-    apiCall('workspace').then(data=>{
-      const ws=data.workspace?.data;
-      if(ws?.nodes){
-        if(ws.nodes)setNodes(ws.nodes);
-        if(ws.manPos)setManPos(ws.manPos);
-        if(ws.laneOffsets)setLaneOffsets(ws.laneOffsets);
-        if(ws.selRoot)setSelRoot(ws.selRoot);
-        if(ws.pan)setPan(ws.pan);
-        if(ws.scale)setScale(ws.scale);
-        if(typeof ws.hideDone==='boolean')setHideDone(ws.hideDone);
-      }
-      cloudLoadedRef.current=true;
-      if(ws?.nodes){
-        setCloudStatus('ok');
-      }else{
-        setCloudStatus('syncing');
-        return apiCall('workspace',{method:'PUT',body:{data:{nodes,manPos,laneOffsets,selRoot,pan,scale,timeView:true,hideDone},title:'Project Flow Workspace'}})
-          .then(()=>setCloudStatus('ok'));
-      }
-    }).catch(()=>{cloudLoadedRef.current=true;setCloudStatus('error');});
-  },[session?.user?.id]);
+  const currentWorkspace=useCallback((extra={})=>{
+    const ts=extra.clientUpdatedAt||Date.now();
+    const data={
+      nodes,manPos,laneOffsets,selRoot,pan,scale,timeView:true,hideDone,
+      lastCloudSavedAt:extra.lastCloudSavedAt??lastCloudSavedAt,
+      clientUpdatedAt:ts
+    };
+    data.workspaceHash=workspaceHash(data);
+    return data;
+  },[nodes,manPos,laneOffsets,selRoot,pan,scale,hideDone,lastCloudSavedAt]);
 
-  useEffect(()=>{
-    if(!session||!cloudLoadedRef.current)return;
-    clearTimeout(cloudTimer.current);
-    cloudTimer.current=setTimeout(()=>{
-      setCloudStatus('syncing');
-      apiCall('workspace',{method:'PUT',body:{data:{nodes,manPos,laneOffsets,selRoot,pan,scale,timeView:true,hideDone},title:'Project Flow Workspace'}})
-        .then(()=>setCloudStatus('ok'))
-        .catch(()=>setCloudStatus('error'));
-    },1800);
-  },[nodes,manPos,laneOffsets,selRoot,pan,scale,hideDone,session?.user?.id]);
-
-  const currentWorkspace=useCallback(()=>({nodes,manPos,laneOffsets,selRoot,pan,scale,timeView:true,hideDone}),[nodes,manPos,laneOffsets,selRoot,pan,scale,hideDone]);
   const applyWorkspaceData=useCallback(data=>{
     if(!data)return false;
     Object.keys(data.nodes||{}).forEach(id=>{
@@ -1467,8 +1537,84 @@ function App(){
     if(data.pan)setPan(data.pan);
     if(data.scale)setScale(data.scale);
     if(typeof data.hideDone==='boolean')setHideDone(data.hideDone);
+    if(data.lastCloudSavedAt)setLastCloudSavedAt(data.lastCloudSavedAt);
     return !!data.nodes;
   },[]);
+
+  const saveWorkspaceToCloud=useCallback(async({manual=false}={})=>{
+    if(!session)return;
+    const savedAt=Date.now();
+    const payload=currentWorkspace({lastCloudSavedAt:savedAt,clientUpdatedAt:savedAt});
+    setCloudStatus('syncing');
+    setCloudError('');
+    try{
+      await apiCall('workspace',{method:'PUT',body:{data:payload,title:'Project Flow Workspace'}});
+      syncPausedRef.current=false;
+      cloudLoadedRef.current=true;
+      lastSyncedHashRef.current=payload.workspaceHash;
+      setLastCloudSavedAt(savedAt);
+      setCloudStatus('ok');
+      if(manual)showToast('已同步到云端');
+    }catch(e){
+      setCloudError(cloudErrorLabel(e));
+      setCloudStatus('error');
+      if(manual)showToast(`同步失败：${cloudErrorLabel(e)}`);
+    }
+  },[session,currentWorkspace,showToast]);
+
+  /* Auto-save */
+  useEffect(()=>{
+    clearTimeout(saveTimer.current);
+    saveTimer.current=setTimeout(()=>{
+      try{
+        const data=currentWorkspace();
+        localStorage.setItem(SAVE_KEY,JSON.stringify(data));
+        localHadSavedDataRef.current=true;
+        if(session&&cloudLoadedRef.current&&!syncPausedRef.current&&data.workspaceHash!==lastSyncedHashRef.current){
+          setCloudStatus(s=>s==='syncing'?s:'pending');
+        }
+        setSavedFlash(true);setTimeout(()=>setSavedFlash(false),1800);
+      }catch{}
+    },800);
+  },[nodes,manPos,laneOffsets,selRoot,pan,scale,hideDone,lastCloudSavedAt,session?.user?.id,currentWorkspace]);
+
+  useEffect(()=>{
+    if(!session)return;
+    cloudLoadedRef.current=false;
+    syncPausedRef.current=false;
+    setCloudStatus('syncing');
+    setCloudError('');
+    apiCall('workspace').then(data=>{
+      const ws=data.workspace?.data;
+      const local=currentWorkspace();
+      const cloudHas=hasWorkspaceData(ws);
+      const localHas=localHadSavedDataRef.current&&hasWorkspaceData(local);
+      const cloudHash=ws?.workspaceHash||workspaceHash(ws);
+      const localHash=local.workspaceHash||workspaceHash(local);
+      if(cloudHas&&localHas&&cloudHash!==localHash){
+        syncPausedRef.current=true;
+        setConflict({cloudData:ws,localData:local,updatedAt:data.workspace?.updated_at});
+        setCloudStatus('pending');
+        return;
+      }
+      if(cloudHas){
+        applyWorkspaceData(ws);
+        lastSyncedHashRef.current=cloudHash;
+        setLastCloudSavedAt(ws.lastCloudSavedAt||Date.parse(data.workspace?.updated_at)||Date.now());
+        cloudLoadedRef.current=true;
+        setCloudStatus('ok');
+        return;
+      }
+      cloudLoadedRef.current=true;
+      return saveWorkspaceToCloud();
+    }).catch(e=>{cloudLoadedRef.current=true;setCloudError(cloudErrorLabel(e));setCloudStatus('error');});
+  },[session?.user?.id]);
+
+  useEffect(()=>{
+    if(!session||!cloudLoadedRef.current||syncPausedRef.current)return;
+    clearTimeout(cloudTimer.current);
+    cloudTimer.current=setTimeout(()=>saveWorkspaceToCloud(),1800);
+  },[nodes,manPos,laneOffsets,selRoot,pan,scale,hideDone,session?.user?.id,saveWorkspaceToCloud]);
 
   /* Load from Gist */
   useEffect(()=>{
@@ -1559,6 +1705,58 @@ function App(){
   const getPos=useCallback(id=>lpos[id],[lpos]);
 
   const roots=useMemo(()=>Object.values(visibleNodes).filter(n=>!n.parentId||!visibleNodes[n.parentId]),[visibleNodes]);
+  const allRoots=useMemo(()=>Object.values(nodes).filter(n=>!n.parentId),[nodes]);
+  const childrenByParent=useMemo(()=>{
+    const map={};
+    Object.values(nodes).forEach(n=>{
+      const key=n.parentId||'__root__';
+      (map[key]||(map[key]=[])).push(n);
+    });
+    return map;
+  },[nodes]);
+  const collectProjectNodes=useCallback(rootId=>{
+    const out=[];
+    const walk=id=>{
+      const n=nodes[id];if(!n)return;
+      out.push(n);
+      (childrenByParent[id]||[]).forEach(ch=>walk(ch.id));
+    };
+    walk(rootId);
+    return out;
+  },[nodes,childrenByParent]);
+  const projectDoneSet=useMemo(()=>{
+    const done=new Set();
+    allRoots.forEach(r=>{
+      const list=collectProjectNodes(r.id);
+      if(list.length&&list.every(n=>n.status==='done'))done.add(r.id);
+    });
+    return done;
+  },[allRoots,collectProjectNodes]);
+  const doneHiddenCount=useMemo(()=>Object.values(nodes).filter(n=>n.status==='done').length,[nodes]);
+  const todayFocus=useMemo(()=>{
+    const today=isoToday();
+    const active=Object.values(nodes).filter(n=>n.status!=='done');
+    const todayActive=active.filter(n=>(n.deadline||'')===today||timeOffsets[n.id]===0).length;
+    const overdue=active.filter(n=>{
+      if(n.deadline)return dateToOffset(n.deadline)<0;
+      return timeOffsets[n.id]<0;
+    }).length;
+    const todayDone=Object.values(nodes).filter(n=>
+      n.status==='done'&&n.completedAt&&new Date(n.completedAt).toDateString()===new Date().toDateString()
+    ).length;
+    const score=n=>{
+      const off=n.deadline?dateToOffset(n.deadline):(timeOffsets[n.id]??0);
+      if(off<0)return [0,off,-(n.createdAt||0)];
+      if(off===0)return [1,0,-(n.createdAt||0)];
+      return [n.source==='continue'?3:2,0,-(n.createdAt||0)];
+    };
+    const next=[...active].sort((a,b)=>{
+      const aa=score(a),bb=score(b);
+      for(let i=0;i<aa.length;i++)if(aa[i]!==bb[i])return aa[i]-bb[i];
+      return 0;
+    })[0]||null;
+    return{todayActive,overdue,todayDone,hiddenDone:hideDone?doneHiddenCount:0,next};
+  },[nodes,timeOffsets,hideDone,doneHiddenCount]);
 
   /* Helper: get effective day offset of a node (for deadline auto-assignment) */
   const getNodeOff=useCallback(nodeId=>{
@@ -1606,11 +1804,15 @@ function App(){
         deadline=isoToday();
       }
     }
-    setNodes(p=>({...p,[id]:{id,title:inp.value.trim(),parentId:inp.parentId,status:'active',createdAt:now(),deadline}}));
+    pendingFocusRef.current=id;
+    setNodes(p=>({...p,[id]:{id,title:inp.value.trim(),parentId:inp.parentId,status:'active',createdAt:now(),deadline,source:inp.label.includes('Continue')?'continue':'branch'}}));
     closeInput(tid);
   };
 
-  const onContinue=id=>openInput(id,'→ Continue');
+  const onContinue=id=>{
+    if(nodes[id]?.status==='done'){showToast('已完成节点不能继续推进');return;}
+    openInput(id,'→ Continue');
+  };
   const onBranch=id=>openInput(nodes[id]?.parentId??null,'⊕ Add Branch');
 
   const onDone=nodeId=>{
@@ -1846,6 +2048,55 @@ function App(){
   },[]);
 
   /* Live marquee selection — preview while dragging, committed after release */
+  const focusNode=useCallback(id=>{
+    const p=posRef.current[id];
+    if(!p||!cvRef.current)return;
+    const{clientWidth:w,clientHeight:h}=cvRef.current;
+    const s=scaleRef.current;
+    setPan({x:w/2-p.x*s-NW/2*s,y:h/2-p.y*s-NH/2*s});
+    setSelIds(new Set([id]));
+    const root=rootOfRef.current[id]||id;
+    if(nodes[root])setSelRoot(root);
+  },[nodes]);
+
+  const focusToday=useCallback(()=>{
+    const bounds=lposResult?.groupBounds?.[0];
+    if(!bounds||!cvRef.current)return;
+    const{clientWidth:w}=cvRef.current;
+    const s=scaleRef.current;
+    const mid=(bounds.minX+bounds.maxX)/2;
+    setPan(p=>({...p,x:w/2-mid*s}));
+  },[lposResult]);
+
+  const focusNextTask=useCallback(()=>{
+    if(todayFocus.next)focusNode(todayFocus.next.id);
+    else showToast('今天没有待推进任务');
+  },[todayFocus,focusNode,showToast]);
+
+  useEffect(()=>{
+    const id=pendingFocusRef.current;
+    if(!id||!lpos[id])return;
+    pendingFocusRef.current=null;
+    requestAnimationFrame(()=>focusNode(id));
+  },[lpos,focusNode]);
+
+  const completionSummary=useMemo(()=>{
+    if(!summaryRoot)return null;
+    const root=nodes[summaryRoot];
+    if(!root)return null;
+    const list=collectProjectNodes(summaryRoot);
+    const done=list.filter(n=>n.status==='done');
+    const created=Math.min(...list.map(n=>n.createdAt||Date.now()));
+    const lastDone=Math.max(...done.map(n=>n.completedAt||n.createdAt||0));
+    return{
+      title:root.title,
+      total:list.length,
+      done:done.length,
+      lastDone:lastDone?fmt(lastDone):'--',
+      days:Math.max(1,Math.ceil(((lastDone||Date.now())-created)/86400000))
+    };
+  },[summaryRoot,nodes,collectProjectNodes]);
+
   const activeSelIds=useMemo(()=>{
     if(!selBox)return selIds;
     const minX=Math.min(selBox.x1,selBox.x2);
@@ -1913,14 +2164,19 @@ function App(){
           )}
           {currentUser&&(
             <span className={`ent-pill ${cloudStatus==='ok'?'ok':cloudStatus==='error'?'bad':''}`}>
-              {cloudStatusText(cloudStatus)}
+              {cloudStatusText(cloudStatus,lastCloudSavedAt,cloudError)}
             </span>
+          )}
+          {currentUser&&(cloudStatus==='error'||cloudStatus==='pending')&&(
+            <button className="btn btn-ghost sync-retry" onClick={()=>saveWorkspaceToCloud({manual:true})}>
+              重试同步
+            </button>
           )}
           <span className="pct">{Math.round(scale*100)}%</span>
           <button className={`btn btn-ghost${hideDone?' btn-active':''}`}
             onClick={()=>setHideDone(v=>!v)}
             title={hideDone?'显示已完成任务并重新排布':'隐藏已完成任务并重新排布'}>
-            {hideDone?'显示 Done':'隐藏 Done'}
+            {hideDone?`显示 Done (${doneHiddenCount})`:`隐藏 Done (${doneHiddenCount})`}
           </button>
           <button className="btn btn-ghost" onClick={()=>{setGuideAuto(false);setGuideOpen(true);}}>使用指南</button>
           <button className="btn btn-ghost acct-btn" onClick={()=>setAccountOpen(true)}>
@@ -1933,7 +2189,7 @@ function App(){
 
       {/* ── Main ── */}
       <div className="layout" style={{flex:1,overflow:'hidden'}}>
-        <Sidebar roots={roots} nodes={nodes} selRoot={selRoot} onSelect={jumpTo} onAdd={addRoot}/>
+        <Sidebar roots={roots} nodes={nodes} selRoot={selRoot} onSelect={jumpTo} onAdd={addRoot} projectDoneSet={projectDoneSet}/>
 
         <div className="cv-area">
           {/* Time ruler */}
@@ -1996,6 +2252,7 @@ function App(){
                   <NodeCard key={n.id} node={n} p={p} colorKey={col}
                     isDragging={dragId===n.id}
                     isSelected={activeSelIds.has(n.id)}
+                    projectDone={projectDoneSet.has(n.id)}
                     onDragStart={e=>{
                       // Node drag cancels marquee
                       selBoxRef.current=null;setSelBox(null);
@@ -2007,7 +2264,8 @@ function App(){
                     onEdit={t=>onEdit(n.id,t)}
                     onDelete={()=>onDelete(n.id)}
                     onSetColor={c=>onSetColor(n.id,c)}
-                    onSetDeadline={dl=>onSetDeadline(n.id,dl)}/>
+                    onSetDeadline={dl=>onSetDeadline(n.id,dl)}
+                    onSummary={()=>setSummaryRoot(n.id)}/>
                 );
               })}
 
@@ -2037,6 +2295,7 @@ function App(){
             </div>
 
             {/* Stats panel */}
+            <TodayFocusPanel stats={todayFocus} onToday={focusToday} onNext={focusNextTask}/>
             <StatsPanel nodes={hideDone?visibleNodes:nodes}/>
             <div className="hint">中键拖拽 · 左键框选 · Delete删除 · 滚轮缩放</div>
           </div>
@@ -2089,6 +2348,8 @@ function App(){
           nodes={nodes}
           histLen={histLen}
           cloudStatus={cloudStatus}
+          lastCloudSavedAt={lastCloudSavedAt}
+          cloudError={cloudError}
           ghStatus={ghStatus}
           mic={desktopMic}
           dictInput={dictInput}
@@ -2100,6 +2361,37 @@ function App(){
           onAccount={()=>{setAccountOpen(true);setDesktopPanel(null);}}
           onGist={()=>{setShowGhModal(true);setDesktopPanel(null);}}/>
       )}
+
+      {conflict&&(
+        <ConflictModal
+          updatedAt={conflict.updatedAt}
+          onUseCloud={()=>{
+            applyWorkspaceData(conflict.cloudData);
+            syncPausedRef.current=false;
+            cloudLoadedRef.current=true;
+            lastSyncedHashRef.current=conflict.cloudData?.workspaceHash||workspaceHash(conflict.cloudData);
+            setConflict(null);
+            setCloudStatus('ok');
+            showToast('已使用云端数据');
+          }}
+          onUploadLocal={()=>{
+            setConflict(null);
+            syncPausedRef.current=false;
+            cloudLoadedRef.current=true;
+            saveWorkspaceToCloud({manual:true});
+          }}
+          onLater={()=>{
+            setConflict(null);
+            syncPausedRef.current=true;
+            cloudLoadedRef.current=false;
+            setCloudStatus('pending');
+            showToast('已暂停云同步，可稍后重试');
+          }}/>
+      )}
+      {completionSummary&&(
+        <CompletionSummaryModal summary={completionSummary} onClose={()=>setSummaryRoot(null)}/>
+      )}
+      {toast&&<div className="toast">{toast}</div>}
 
       {/* ── Delete confirmation dialog ── */}
       {deleteConfirm&&(
@@ -2298,7 +2590,7 @@ function AccountModal({user,bundle,licenseKey,setLicenseKey,licenseBusy,licenseE
   );
 }
 
-function DesktopPanel({panel,version,user,nodes,histLen,cloudStatus,ghStatus,mic,dictInput,setDictInput,dictionaryTerms,onAddDictionaryTerm,onClose,onGuide,onAccount,onGist}){
+function DesktopPanel({panel,version,user,nodes,histLen,cloudStatus,lastCloudSavedAt,cloudError,ghStatus,mic,dictInput,setDictInput,dictionaryTerms,onAddDictionaryTerm,onClose,onGuide,onAccount,onGist}){
   const nodeList=Object.values(nodes).sort((a,b)=>(b.completedAt||b.createdAt)-(a.completedAt||a.createdAt)).slice(0,8);
   const titleMap={
     feedback:'反馈意见',
@@ -2339,7 +2631,7 @@ function DesktopPanel({panel,version,user,nodes,histLen,cloudStatus,ghStatus,mic
           <p>登录 Project Flow 账号后，项目会自动保存到账号云端；换电脑登录同一个账号即可继续使用。GitHub 只是可选的高级备份。</p>
           <div className="desktop-list">
             <div className="desktop-row"><span>账号</span><span>{user?.email||'未登录'}</span></div>
-            <div className="desktop-row"><span>账号云同步</span><span>{user?cloudStatusText(cloudStatus):'登录后自动同步'}</span></div>
+            <div className="desktop-row"><span>账号云同步</span><span>{user?cloudStatusText(cloudStatus,lastCloudSavedAt,cloudError):'登录后自动同步'}</span></div>
             <div className="desktop-row"><span>高级备份</span><span>{ghStatus==='ok'?'GitHub 已连接':'未启用'}</span></div>
           </div>
         </>}
@@ -2499,6 +2791,64 @@ function StatsPanel({nodes}){
   );
 }
 
+function TodayFocusPanel({stats,onToday,onNext}){
+  return(
+    <div className="today-focus">
+      <div className="tf-head">
+        <div className="tf-title">Today Focus</div>
+        <div className="tf-sub">Today</div>
+      </div>
+      <div className="tf-grid">
+        <div className="tf-stat"><div className="tf-num">{stats.todayActive}</div><div className="tf-label">今日 Active</div></div>
+        <div className="tf-stat hot"><div className="tf-num">{stats.overdue}</div><div className="tf-label">逾期</div></div>
+        <div className="tf-stat done"><div className="tf-num">{stats.todayDone}</div><div className="tf-label">今日 Done</div></div>
+        <div className="tf-stat"><div className="tf-num">{stats.hiddenDone}</div><div className="tf-label">已隐藏 Done</div></div>
+      </div>
+      <div className="tf-actions">
+        <button className="btn btn-ghost" onClick={onToday}>定位 Today</button>
+        <button className="btn btn-green" onClick={onNext}>下一个任务</button>
+      </div>
+      <div className="tf-next">{stats.next?`Next: ${stats.next.title}`:'Next: 暂无待推进任务'}</div>
+    </div>
+  );
+}
+
+function ConflictModal({updatedAt,onUseCloud,onUploadLocal,onLater}){
+  const t=updatedAt?new Date(updatedAt).toLocaleString('zh-CN'):'未知时间';
+  return(
+    <div className="del-confirm-overlay" onClick={onLater}>
+      <div className="mp" onClick={e=>e.stopPropagation()}>
+        <h2>发现本地和云端数据不同</h2>
+        <p>你的本地工作区和云端工作区都有内容，系统不会自动覆盖。推荐先使用云端版本；如果本机才是最新版本，可以上传本地。</p>
+        <div className="conflict-note">云端更新时间：{t}</div>
+        <div className="conflict-actions">
+          <button className="btn btn-green" onClick={onUseCloud}>使用云端</button>
+          <button className="btn btn-ghost" onClick={onUploadLocal}>上传本地</button>
+          <button className="btn btn-ghost" onClick={onLater}>稍后处理</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CompletionSummaryModal({summary,onClose}){
+  return(
+    <div className="del-confirm-overlay" onClick={onClose}>
+      <div className="mp" onClick={e=>e.stopPropagation()}>
+        <h2>完成总结</h2>
+        <p>{summary.title}</p>
+        <div className="summary-grid">
+          <div className="summary-item"><div className="summary-k">节点总数</div><div className="summary-v">{summary.total}</div></div>
+          <div className="summary-item"><div className="summary-k">完成数</div><div className="summary-v">{summary.done}</div></div>
+          <div className="summary-item"><div className="summary-k">最后完成</div><div className="summary-v">{summary.lastDone}</div></div>
+          <div className="summary-item"><div className="summary-k">持续天数</div><div className="summary-v">{summary.days}</div></div>
+        </div>
+        <div className="mp-actions"><button className="btn btn-green" onClick={onClose}>知道了</button></div>
+      </div>
+    </div>
+  );
+}
+
 /* ══════════════════════════════════════════
    AI Bar
 ══════════════════════════════════════════ */
@@ -2555,7 +2905,7 @@ function AIBar({open,onToggle,onGenerate}){
 /* ══════════════════════════════════════════
    Sidebar
 ══════════════════════════════════════════ */
-function Sidebar({roots,nodes,selRoot,onSelect,onAdd}){
+function Sidebar({roots,nodes,selRoot,onSelect,onAdd,projectDoneSet=new Set()}){
   const countAll=rid=>{let c=0;const v=id=>{c++;Object.values(nodes).filter(n=>n.parentId===id).forEach(x=>v(x.id));};v(rid);return c;};
   const countDone=rid=>{let c=0;const v=id=>{if(nodes[id]?.status==='done')c++;Object.values(nodes).filter(n=>n.parentId===id).forEach(x=>v(x.id));};v(rid);return c;};
   const timeline=useMemo(()=>
@@ -2570,7 +2920,7 @@ function Sidebar({roots,nodes,selRoot,onSelect,onAdd}){
         {roots.map(r=>{
           const col=CM[r.color||DFL];
           const total=countAll(r.id),done=countDone(r.id);
-          const allDone=done===total&&total>0;
+          const allDone=projectDoneSet.has(r.id)||done===total&&total>0;
           return(
             <div key={r.id} className={`pi${selRoot===r.id?' sel':''}`}
               style={{'--pi-c':col?.line||'#388bfd'}}
@@ -2580,6 +2930,7 @@ function Sidebar({roots,nodes,selRoot,onSelect,onAdd}){
                 boxShadow:selRoot===r.id?`0 0 8px ${allDone?'#22c55e':col?.dot||'#388bfd'}`:'none'
               }}/>
               <span className="pname">{r.title}</span>
+              {allDone&&<span className="pdone-label">已完成</span>}
               <span className={`pcnt${allDone?' all-done':''}`}>{done}/{total}</span>
             </div>
           );
@@ -2616,7 +2967,7 @@ function Sidebar({roots,nodes,selRoot,onSelect,onAdd}){
 /* ══════════════════════════════════════════
    NodeCard
 ══════════════════════════════════════════ */
-function NodeCard({node,p,colorKey,isDragging,isSelected,onDragStart,onContinue,onBranch,onDone,onEdit,onDelete,onSetColor,onSetDeadline}){
+function NodeCard({node,p,colorKey,isDragging,isSelected,projectDone,onDragStart,onContinue,onBranch,onDone,onEdit,onDelete,onSetColor,onSetDeadline,onSummary}){
   const [menuOpen,setMenuOpen]=useState(false);
   const [cpOpen,setCpOpen]=useState(false);
   const [editing,setEditing]=useState(false);
@@ -2706,6 +3057,13 @@ function NodeCard({node,p,colorKey,isDragging,isSelected,onDragStart,onContinue,
             {fmt(node.createdAt)}
             {node.completedAt&&<span style={{color:'#4ade80'}}> ✓{fmt(node.completedAt)}</span>}
           </span>
+          {projectDone&&(
+            <button className="done-summary-chip"
+              onMouseDown={e=>e.stopPropagation()}
+              onClick={e=>{e.stopPropagation();onSummary?.();}}>
+              项目已完成
+            </button>
+          )}
           {/* Deadline */}
           {editDl?(
             <input ref={dlRef} className="ndeadline-input" type="date"
@@ -2737,7 +3095,8 @@ function NodeCard({node,p,colorKey,isDragging,isSelected,onDragStart,onContinue,
               onClick={e=>{e.stopPropagation();setMenuOpen(o=>!o);}}>▶</button>
             {menuOpen&&(
               <div className="dd" onMouseDown={e=>e.stopPropagation()}>
-                <button className="ddi c" onClick={()=>{onContinue();setMenuOpen(false);}}>→ Continue</button>
+                <button className="ddi c" disabled={isDone} title={isDone?'已完成节点不能继续推进':'Continue'}
+                  onClick={()=>{if(!isDone)onContinue();setMenuOpen(false);}}>→ Continue</button>
                 <button className="ddi b" onClick={()=>{onBranch();setMenuOpen(false);}}>⊕ Add Branch</button>
                 <div className="ddsep"/>
                 <button className="ddi d" onClick={()=>{onDone();setMenuOpen(false);}}>✓ Done</button>
@@ -2763,7 +3122,7 @@ function NewCard({p,label,value,onChange,onConfirm,onCancel}){
       <div className="newrow">
         <input ref={ref} className="newinp" value={value}
           onChange={e=>onChange(e.target.value)}
-          placeholder="Task name..."
+          placeholder={label.includes('Continue')?'下一步是什么？':'Task name...'}
           onKeyDown={e=>{if(e.key==='Enter')onConfirm();if(e.key==='Escape')onCancel();}}/>
         <button className="bstart" onClick={onConfirm}>Start</button>
         <button className="bx" onClick={onCancel}>✕</button>
