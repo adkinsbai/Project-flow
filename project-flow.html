@@ -917,6 +917,18 @@ async function gistLoad(token,gistId){
   const raw=d.files?.[GIST_FILE]?.content;
   return raw?JSON.parse(raw):null;
 }
+async function findProjectFlowGist(token){
+  for(let page=1;page<=3;page++){
+    const r=await fetch(`https://api.github.com/gists?per_page=100&page=${page}`,
+      {headers:{Authorization:`token ${token}`}});
+    if(!r.ok)throw new Error(r.statusText);
+    const items=await r.json();
+    const found=items.find(g=>g.files?.[GIST_FILE]);
+    if(found)return found;
+    if(!Array.isArray(items)||items.length<100)break;
+  }
+  return null;
+}
 async function verifyToken(token){
   const r=await fetch('https://api.github.com/user',{headers:{Authorization:`token ${token}`}});
   if(!r.ok)throw new Error('Token 无效');return r.json();
@@ -1355,6 +1367,7 @@ function App(){
   const [modalLoading,setModalLoading]=useState(false);
   const [ghUser,setGhUser]=useState(()=>{try{return JSON.parse(localStorage.getItem('pf_gh_user')||'null');}catch{return null;}});
   const gistTimerRef=useRef(null);
+  const gistLoadedRef=useRef(false);
   const [panMode,setPanMode]=useState(false);
   const [dragId,setDragId]=useState(null);
   const [arranging,setArranging]=useState(false);
@@ -1427,23 +1440,34 @@ function App(){
     },1800);
   },[nodes,manPos,laneOffsets,selRoot,pan,scale,timeView,session?.user?.id]);
 
+  const currentWorkspace=useCallback(()=>({nodes,manPos,laneOffsets,selRoot,pan,scale,timeView}),[nodes,manPos,laneOffsets,selRoot,pan,scale,timeView]);
+  const applyWorkspaceData=useCallback(data=>{
+    if(!data)return false;
+    Object.keys(data.nodes||{}).forEach(id=>{
+      const n=parseInt(id.replace(/\D/g,''));
+      if(!isNaN(n)&&n>=_c)_c=n+1;
+    });
+    if(data.nodes)setNodes(data.nodes);
+    if(data.manPos)setManPos(data.manPos);
+    if(data.laneOffsets)setLaneOffsets(data.laneOffsets);
+    if(data.selRoot)setSelRoot(data.selRoot);
+    if(data.pan)setPan(data.pan);
+    if(data.scale)setScale(data.scale);
+    if(typeof data.timeView==='boolean')setTimeView(data.timeView);
+    return !!data.nodes;
+  },[]);
+
   /* Load from Gist */
   useEffect(()=>{
     if(!ghToken||!gistId)return;
+    if(gistLoadedRef.current===gistId)return;
     setGhStatus('syncing');
     gistLoad(ghToken,gistId).then(data=>{
-      if(!data)return;
-      Object.keys(data.nodes||{}).forEach(id=>{
-        const n=parseInt(id.replace(/\D/g,''));
-        if(!isNaN(n)&&n>=_c)_c=n+1;
-      });
-      if(data.nodes)setNodes(data.nodes);
-      if(data.manPos)setManPos(data.manPos);
-      if(data.laneOffsets)setLaneOffsets(data.laneOffsets);
-      if(data.selRoot)setSelRoot(data.selRoot);
+      applyWorkspaceData(data);
+      gistLoadedRef.current=gistId;
       setGhStatus('ok');
     }).catch(()=>setGhStatus('error'));
-  },[]);
+  },[ghToken,gistId,applyWorkspaceData]);
 
   /* Auto-sync to Gist */
   useEffect(()=>{
@@ -1451,18 +1475,27 @@ function App(){
     clearTimeout(gistTimerRef.current);
     gistTimerRef.current=setTimeout(()=>{
       setGhStatus('syncing');
-      gistSave(ghToken,gistId,{nodes,manPos,laneOffsets,selRoot})
+      gistSave(ghToken,gistId,currentWorkspace())
         .then(()=>setGhStatus('ok'))
         .catch(()=>setGhStatus('error'));
     },4000);
-  },[nodes,manPos,laneOffsets,selRoot,ghToken,gistId]);
+  },[nodes,manPos,laneOffsets,selRoot,pan,scale,timeView,ghToken,gistId,currentWorkspace]);
 
   const connectGist=async()=>{
     setModalErr('');setModalLoading(true);
     try{
-      const user=await verifyToken(tokenInput.trim());
-      const g=await gistSave(tokenInput.trim(),null,{nodes,manPos,laneOffsets,selRoot});
-      const newToken=tokenInput.trim(),newGistId=g.id;
+      const newToken=tokenInput.trim();
+      const user=await verifyToken(newToken);
+      let g=await findProjectFlowGist(newToken);
+      if(g){
+        const data=await gistLoad(newToken,g.id);
+        applyWorkspaceData(data);
+        gistLoadedRef.current=g.id;
+      }else{
+        g=await gistSave(newToken,null,currentWorkspace());
+        gistLoadedRef.current=g.id;
+      }
+      const newGistId=g.id;
       localStorage.setItem(GH_TOKEN_KEY,newToken);localStorage.setItem(GH_GIST_KEY,newGistId);
       localStorage.setItem('pf_gh_user',JSON.stringify({login:user.login,avatar:user.avatar_url}));
       setGhToken(newToken);setGistId(newGistId);
