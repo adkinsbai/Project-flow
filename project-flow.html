@@ -1182,7 +1182,8 @@ function App(){
   const [pan,setPan]=useState(_saved?.pan||{x:90,y:70});
   const [scale,setScale]=useState(_saved?.scale||1);
   const [savedFlash,setSavedFlash]=useState(false);
-  const [timeView,setTimeView]=useState(_saved?.timeView||false);
+  const [timeView]=useState(true);
+  const [hideDone,setHideDone]=useState(!!_saved?.hideDone);
 
   const currentUser=session?.user||null;
   const entitlement=profileBundle?.entitlement||null;
@@ -1409,11 +1410,11 @@ function App(){
     clearTimeout(saveTimer.current);
     saveTimer.current=setTimeout(()=>{
       try{
-        localStorage.setItem(SAVE_KEY,JSON.stringify({nodes,manPos,laneOffsets,selRoot,pan,scale,timeView}));
+        localStorage.setItem(SAVE_KEY,JSON.stringify({nodes,manPos,laneOffsets,selRoot,pan,scale,timeView:true,hideDone}));
         setSavedFlash(true);setTimeout(()=>setSavedFlash(false),1800);
       }catch{}
     },800);
-  },[nodes,manPos,laneOffsets,selRoot,pan,scale,timeView]);
+  },[nodes,manPos,laneOffsets,selRoot,pan,scale,hideDone]);
 
   useEffect(()=>{
     if(!session)return;
@@ -1428,14 +1429,14 @@ function App(){
         if(ws.selRoot)setSelRoot(ws.selRoot);
         if(ws.pan)setPan(ws.pan);
         if(ws.scale)setScale(ws.scale);
-        if(typeof ws.timeView==='boolean')setTimeView(ws.timeView);
+        if(typeof ws.hideDone==='boolean')setHideDone(ws.hideDone);
       }
       cloudLoadedRef.current=true;
       if(ws?.nodes){
         setCloudStatus('ok');
       }else{
         setCloudStatus('syncing');
-        return apiCall('workspace',{method:'PUT',body:{data:{nodes,manPos,laneOffsets,selRoot,pan,scale,timeView},title:'Project Flow Workspace'}})
+        return apiCall('workspace',{method:'PUT',body:{data:{nodes,manPos,laneOffsets,selRoot,pan,scale,timeView:true,hideDone},title:'Project Flow Workspace'}})
           .then(()=>setCloudStatus('ok'));
       }
     }).catch(()=>{cloudLoadedRef.current=true;setCloudStatus('error');});
@@ -1446,13 +1447,13 @@ function App(){
     clearTimeout(cloudTimer.current);
     cloudTimer.current=setTimeout(()=>{
       setCloudStatus('syncing');
-      apiCall('workspace',{method:'PUT',body:{data:{nodes,manPos,laneOffsets,selRoot,pan,scale,timeView},title:'Project Flow Workspace'}})
+      apiCall('workspace',{method:'PUT',body:{data:{nodes,manPos,laneOffsets,selRoot,pan,scale,timeView:true,hideDone},title:'Project Flow Workspace'}})
         .then(()=>setCloudStatus('ok'))
         .catch(()=>setCloudStatus('error'));
     },1800);
-  },[nodes,manPos,laneOffsets,selRoot,pan,scale,timeView,session?.user?.id]);
+  },[nodes,manPos,laneOffsets,selRoot,pan,scale,hideDone,session?.user?.id]);
 
-  const currentWorkspace=useCallback(()=>({nodes,manPos,laneOffsets,selRoot,pan,scale,timeView}),[nodes,manPos,laneOffsets,selRoot,pan,scale,timeView]);
+  const currentWorkspace=useCallback(()=>({nodes,manPos,laneOffsets,selRoot,pan,scale,timeView:true,hideDone}),[nodes,manPos,laneOffsets,selRoot,pan,scale,hideDone]);
   const applyWorkspaceData=useCallback(data=>{
     if(!data)return false;
     Object.keys(data.nodes||{}).forEach(id=>{
@@ -1465,7 +1466,7 @@ function App(){
     if(data.selRoot)setSelRoot(data.selRoot);
     if(data.pan)setPan(data.pan);
     if(data.scale)setScale(data.scale);
-    if(typeof data.timeView==='boolean')setTimeView(data.timeView);
+    if(typeof data.hideDone==='boolean')setHideDone(data.hideDone);
     return !!data.nodes;
   },[]);
 
@@ -1522,22 +1523,32 @@ function App(){
     setGhToken('');setGistId('');setGhUser(null);setGhStatus('idle');
   };
 
-  /* Combined nodes+ghosts */
+  const visibleNodes=useMemo(()=>{
+    if(!hideDone)return nodes;
+    return Object.fromEntries(Object.entries(nodes).filter(([,n])=>n.status!=='done'));
+  },[nodes,hideDone]);
+
+  const visibleInputs=useMemo(()=>{
+    if(!hideDone)return inputs;
+    return Object.fromEntries(Object.entries(inputs).filter(([,inp])=>visibleNodes[inp.parentId]));
+  },[inputs,hideDone,visibleNodes]);
+
+  /* Combined visible nodes+ghosts */
   const allNs=useMemo(()=>{
     const g={};
-    Object.entries(inputs).forEach(([tid,inp])=>{
+    Object.entries(visibleInputs).forEach(([tid,inp])=>{
       g[tid]={id:tid,title:'',parentId:inp.parentId,status:'ghost',createdAt:now()};
     });
-    return{...nodes,...g};
-  },[nodes,inputs]);
+    return{...visibleNodes,...g};
+  },[visibleNodes,visibleInputs]);
 
   /* lpos: in time view returns {pos,offsets}, in tree view returns flat {id->pos} map */
   const lposResult=useMemo(()=>
-    timeView?calcTimeLayout(allNs,nodes,laneOffsets):null
-  ,[allNs,timeView,nodes,laneOffsets]);
+    calcTimeLayout(allNs,visibleNodes,laneOffsets)
+  ,[allNs,visibleNodes,laneOffsets]);
   const lpos=useMemo(()=>
-    timeView?(lposResult?.pos||{}):calcLayout(allNs)
-  ,[allNs,timeView,lposResult]);
+    lposResult?.pos||{}
+  ,[lposResult]);
   const timeOffsets=lposResult?.offsets||{};  // day offsets per node in time view
 
   useEffect(()=>{posRef.current=lpos;},[lpos]);
@@ -1545,9 +1556,9 @@ function App(){
 
   /* In time view, date columns own X and project lanes own Y.
      Tree view keeps the older freeform node positions. */
-  const getPos=useCallback(id=>timeView?lpos[id]:(manPos[id]||lpos[id]),[timeView,manPos,lpos]);
+  const getPos=useCallback(id=>lpos[id],[lpos]);
 
-  const roots=useMemo(()=>Object.values(nodes).filter(n=>!n.parentId),[nodes]);
+  const roots=useMemo(()=>Object.values(visibleNodes).filter(n=>!n.parentId||!visibleNodes[n.parentId]),[visibleNodes]);
 
   /* Helper: get effective day offset of a node (for deadline auto-assignment) */
   const getNodeOff=useCallback(nodeId=>{
@@ -1684,9 +1695,7 @@ function App(){
     });
     const firstRoot=specs.find(s=>!s.parentId);
     if(firstRoot)setSelRoot(firstRoot.id);
-    if(timeView)return;
-    setTimeView(true); // auto-switch to time view
-  },[saveSnap,timeView]);
+  },[saveSnap]);
 
   /* Node drag */
   const startNodeDrag=(e,nodeId)=>{
@@ -1845,16 +1854,16 @@ function App(){
     const maxY=Math.max(selBox.y1,selBox.y2);
     const ids=new Set();
     Object.keys(allNs).forEach(id=>{
-      const p=timeView?lpos[id]:(manPos[id]||lpos[id]);
+      const p=lpos[id];
       if(!p)return;
       if(p.x>=minX&&p.x+NW<=maxX&&p.y>=minY&&p.y+NH<=maxY)ids.add(id);
     });
     return ids;
-  },[selBox,allNs,timeView,manPos,lpos,selIds]);
+  },[selBox,allNs,lpos,selIds]);
 
   /* SVG lines — inline gp avoids stale closure on getPos */
   const lines=useMemo(()=>{
-    const gp=id=>timeView?lpos[id]:(manPos[id]||lpos[id]);
+    const gp=id=>lpos[id];
     return Object.values(allNs)
       .filter(n=>n.parentId&&gp(n.id)&&gp(n.parentId))
       .map(n=>{
@@ -1864,7 +1873,7 @@ function App(){
           x1:pa.x+NW,y1:pa.y+NH/2,x2:ch.x,y2:ch.y+NH/2,
           done:n.status==='done',ghost:n.status==='ghost',col};
       });
-  },[allNs,timeView,manPos,lpos,nodes]);
+  },[allNs,lpos,nodes]);
 
   // Canvas virtual size: enough to fit all positioned nodes
   const allPts=Object.keys(allNs).map(id=>getPos(id)).filter(Boolean);
@@ -1908,18 +1917,16 @@ function App(){
             </span>
           )}
           <span className="pct">{Math.round(scale*100)}%</span>
-          <button
-            className={`btn btn-ghost${timeView?' btn-active':''}`}
-            onClick={()=>setTimeView(v=>!v)}
-            title="切换时间轴 / 树形视图">
-            {timeView?'⬡ 树形':'⏱ 时间轴'}
+          <button className={`btn btn-ghost${hideDone?' btn-active':''}`}
+            onClick={()=>setHideDone(v=>!v)}
+            title={hideDone?'显示已完成任务并重新排布':'隐藏已完成任务并重新排布'}>
+            {hideDone?'显示 Done':'隐藏 Done'}
           </button>
           <button className="btn btn-ghost" onClick={()=>{setGuideAuto(false);setGuideOpen(true);}}>使用指南</button>
           <button className="btn btn-ghost acct-btn" onClick={()=>setAccountOpen(true)}>
             {currentUser?currentUser.email?.split('@')[0]:'Account'}
           </button>
           <button className="btn btn-ghost" onClick={autoArrange} title="自动整理">⊞ 整理</button>
-          <button className="btn btn-ghost" onClick={()=>{setScale(1);setPan({x:90,y:70});}}>Reset</button>
           <button className="btn btn-green" onClick={addRoot}>＋ New Project</button>
         </div>
       </header>
@@ -1982,7 +1989,7 @@ function App(){
               </svg>
 
               {/* Node cards */}
-              {Object.values(nodes).map(n=>{
+              {Object.values(visibleNodes).map(n=>{
                 const p=getPos(n.id);if(!p)return null;
                 const col=getColor(n.id,nodes);
                 return(
@@ -2030,7 +2037,7 @@ function App(){
             </div>
 
             {/* Stats panel */}
-            <StatsPanel nodes={nodes}/>
+            <StatsPanel nodes={hideDone?visibleNodes:nodes}/>
             <div className="hint">中键拖拽 · 左键框选 · Delete删除 · 滚轮缩放</div>
           </div>
         </div>
