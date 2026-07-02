@@ -934,6 +934,10 @@ async function verifyToken(token){
   if(!r.ok)throw new Error('Token 无效');return r.json();
 }
 
+function cloudStatusText(status){
+  return status==='syncing'?'账号同步中':status==='ok'?'账号云端已保存':status==='error'?'账号同步失败':'等待账号同步';
+}
+
 const _saved=(()=>{
   try{
     const s=localStorage.getItem(SAVE_KEY)||localStorage.getItem('pf_v1');
@@ -1417,15 +1421,23 @@ function App(){
     setCloudStatus('syncing');
     apiCall('workspace').then(data=>{
       const ws=data.workspace?.data;
-      if(ws?.nodes)setNodes(ws.nodes);
-      if(ws?.manPos)setManPos(ws.manPos);
-      if(ws?.laneOffsets)setLaneOffsets(ws.laneOffsets);
-      if(ws?.selRoot)setSelRoot(ws.selRoot);
-      if(ws?.pan)setPan(ws.pan);
-      if(ws?.scale)setScale(ws.scale);
-      if(typeof ws?.timeView==='boolean')setTimeView(ws.timeView);
+      if(ws?.nodes){
+        if(ws.nodes)setNodes(ws.nodes);
+        if(ws.manPos)setManPos(ws.manPos);
+        if(ws.laneOffsets)setLaneOffsets(ws.laneOffsets);
+        if(ws.selRoot)setSelRoot(ws.selRoot);
+        if(ws.pan)setPan(ws.pan);
+        if(ws.scale)setScale(ws.scale);
+        if(typeof ws.timeView==='boolean')setTimeView(ws.timeView);
+      }
       cloudLoadedRef.current=true;
-      setCloudStatus(ws?'ok':'local');
+      if(ws?.nodes){
+        setCloudStatus('ok');
+      }else{
+        setCloudStatus('syncing');
+        return apiCall('workspace',{method:'PUT',body:{data:{nodes,manPos,laneOffsets,selRoot,pan,scale,timeView},title:'Project Flow Workspace'}})
+          .then(()=>setCloudStatus('ok'));
+      }
     }).catch(()=>{cloudLoadedRef.current=true;setCloudStatus('error');});
   },[session?.user?.id]);
 
@@ -1892,7 +1904,7 @@ function App(){
           )}
           {currentUser&&(
             <span className={`ent-pill ${cloudStatus==='ok'?'ok':cloudStatus==='error'?'bad':''}`}>
-              {cloudStatus==='syncing'?'同步中':cloudStatus==='ok'?'云端已保存':cloudStatus==='error'?'云同步失败':'本地数据'}
+              {cloudStatusText(cloudStatus)}
             </span>
           )}
           <span className="pct">{Math.round(scale*100)}%</span>
@@ -1901,10 +1913,6 @@ function App(){
             onClick={()=>setTimeView(v=>!v)}
             title="切换时间轴 / 树形视图">
             {timeView?'⬡ 树形':'⏱ 时间轴'}
-          </button>
-          <button className={`btn btn-gist${ghStatus==='ok'?' connected':ghStatus==='syncing'?' syncing':ghStatus==='error'?' err':''}`}
-            onClick={()=>setShowGhModal(true)}>
-            {ghStatus==='syncing'?'⟳':''}{ghUser?` @${ghUser.login}`:'☁ Gist 同步'}
           </button>
           <button className="btn btn-ghost" onClick={()=>{setGuideAuto(false);setGuideOpen(true);}}>使用指南</button>
           <button className="btn btn-ghost acct-btn" onClick={()=>setAccountOpen(true)}>
@@ -2120,7 +2128,7 @@ function App(){
                 {ghStatus==='ok'&&<div className="mp-status ok">✓ 已连接 — @{ghUser.login}</div>}
                 {ghStatus==='error'&&<div className="mp-status err">⚠ 同步失败，请检查 Token</div>}
                 <p style={{marginBottom:8}}>Gist ID：<code style={{fontSize:11,color:'#8b949e'}}>{gistId}</code></p>
-                <p>工作流每次修改后自动同步到 GitHub Gist（私有）。</p>
+                <p>普通用户不需要连接 GitHub。你的项目数据已经会跟随 Project Flow 账号自动保存到云端；这里仅作为开发者高级备份。</p>
                 <div className="mp-sep"/>
                 <div className="mp-actions">
                   <button className="btn btn-ghost" onClick={()=>setShowGhModal(false)}>关闭</button>
@@ -2130,8 +2138,8 @@ function App(){
               </>
             ):(
               <>
-                <h2>☁ 连接 GitHub Gist 云同步</h2>
-                <p>连接后，工作流将自动备份到你的 GitHub 私有 Gist。</p>
+                <h2>高级备份：GitHub Gist</h2>
+                <p>普通用户不需要 GitHub。登录 Project Flow 账号后，项目会自动保存到账号云端；Gist 只用于额外备份或迁移。</p>
                 <p><b>获取 Token：</b><br/>
                   1. 打开 <a href="https://github.com/settings/tokens/new" target="_blank" rel="noreferrer">github.com/settings/tokens/new</a><br/>
                   2. 勾选 <b>gist</b> 权限并生成，复制到下方
@@ -2321,11 +2329,11 @@ function DesktopPanel({panel,version,user,nodes,histLen,cloudStatus,ghStatus,mic
           </div>
         </>}
         {panel==='settings'&&<>
-          <p>桌面版会最小化到系统托盘。账号和会员状态走 Supabase，本地工作流会保存在本机并同步到云端工作区。</p>
+          <p>登录 Project Flow 账号后，项目会自动保存到账号云端；换电脑登录同一个账号即可继续使用。GitHub 只是可选的高级备份。</p>
           <div className="desktop-list">
             <div className="desktop-row"><span>账号</span><span>{user?.email||'未登录'}</span></div>
-            <div className="desktop-row"><span>云同步</span><span>{cloudStatus}</span></div>
-            <div className="desktop-row"><span>Gist 同步</span><span>{ghStatus}</span></div>
+            <div className="desktop-row"><span>账号云同步</span><span>{user?cloudStatusText(cloudStatus):'登录后自动同步'}</span></div>
+            <div className="desktop-row"><span>高级备份</span><span>{ghStatus==='ok'?'GitHub 已连接':'未启用'}</span></div>
           </div>
         </>}
         {panel==='microphone'&&<>
@@ -2338,7 +2346,7 @@ function DesktopPanel({panel,version,user,nodes,histLen,cloudStatus,ghStatus,mic
         </>}
         <div className="mp-actions">
           <button className="btn btn-ghost" onClick={onGuide}>使用指南</button>
-          <button className="btn btn-ghost" onClick={onGist}>同步设置</button>
+          <button className="btn btn-ghost" onClick={onGist}>高级备份</button>
           <button className="btn btn-ghost" onClick={onAccount}>账户</button>
           <button className="btn btn-green" onClick={onClose}>关闭</button>
         </div>
