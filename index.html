@@ -316,26 +316,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
 .stat-item.donestat .stat-value{color:#4ade80}
 .stat-tag{font-size:8.5px;color:var(--su);text-align:center}
 
-.today-focus{
-  position:absolute;left:16px;bottom:16px;z-index:320;
-  width:230px;background:rgba(13,17,23,.92);
-  border:1px solid var(--bd);border-radius:12px;
-  padding:12px;backdrop-filter:blur(12px);
-  box-shadow:0 18px 50px rgba(0,0,0,.28)}
-.tf-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
-.tf-title{font-size:12px;font-weight:800;color:#e6edf3;letter-spacing:.02em}
-.tf-sub{font-size:10px;color:#4ade80;background:#052e16;
-  border:1px solid #166534;border-radius:999px;padding:2px 7px}
-.tf-grid{display:block;margin-bottom:12px}
-.tf-stat{background:#0f1724;border:1px solid rgba(255,255,255,.06);
-  border-radius:8px;padding:10px 11px}
-.tf-num{font-size:28px;font-weight:800;line-height:1;color:#60a5fa;
-  font-variant-numeric:tabular-nums}
-.tf-label{font-size:10px;color:var(--su);margin-top:6px;white-space:nowrap}
-.tf-actions{display:flex;margin-top:10px}
-.tf-actions .btn{width:100%;padding:8px 10px}
-.tf-next{font-size:10.5px;color:var(--mu);margin-top:8px;overflow:hidden;
-  text-overflow:ellipsis;white-space:nowrap}
+.next-job-mini{
+  margin-top:7px;border:1px solid rgba(46,160,67,.7);
+  background:#238636;color:#fff;border-radius:7px;
+  padding:4px 8px;font-size:10px;font-weight:700;
+  cursor:pointer;line-height:1.2;white-space:nowrap}
+.next-job-mini:hover{filter:brightness(1.12)}
+.next-job-mini:disabled{opacity:.42;cursor:not-allowed;filter:none}
 .sync-retry{padding:5px 9px}
 .toast{
   position:fixed;left:50%;bottom:78px;transform:translateX(-50%);
@@ -2299,8 +2286,7 @@ function App(){
             </div>
 
             {/* Stats panel */}
-            <TodayFocusPanel stats={todayFocus} onNext={focusNextTask}/>
-            <StatsPanel nodes={hideDone?visibleNodes:nodes}/>
+            <StatsPanel nodes={hideDone?visibleNodes:nodes} onNextJob={focusNextTask} nextJobCount={todayFocus.ongoing}/>
             <div className="hint">中键拖拽 · 左键框选 · Delete删除 · 滚轮缩放</div>
           </div>
         </div>
@@ -2774,7 +2760,7 @@ function TimeRuler({pan,scale,cvW,groupBounds}){
 /* ══════════════════════════════════════════
    Stats Panel
 ══════════════════════════════════════════ */
-function StatsPanel({nodes}){
+function StatsPanel({nodes,onNextJob,nextJobCount=0}){
   const allArr=Object.values(nodes);
   const doneCount=allArr.filter(n=>n.status==='done').length;
   const ongoingCount=allArr.length-doneCount;
@@ -2784,29 +2770,13 @@ function StatsPanel({nodes}){
         <div className="stat-value">{ongoingCount}</div>
         <div className="stat-label">On-going</div>
         <div className="stat-tag">⚡ 进行中</div>
+        <button className="next-job-mini" onClick={onNextJob} disabled={!nextJobCount}>Next Job</button>
       </div>
       <div className="stat-sep"/>
       <div className="stat-item donestat">
         <div className="stat-value">{doneCount}</div>
         <div className="stat-label">Done</div>
         <div className="stat-tag">✓ 已完成</div>
-      </div>
-    </div>
-  );
-}
-
-function TodayFocusPanel({stats,onNext}){
-  return(
-    <div className="today-focus">
-      <div className="tf-head">
-        <div className="tf-title">Today Focus</div>
-        <div className="tf-sub">Ongoing</div>
-      </div>
-      <div className="tf-grid">
-        <div className="tf-stat"><div className="tf-num">{stats.ongoing}</div><div className="tf-label">Ongoing projects</div></div>
-      </div>
-      <div className="tf-actions">
-        <button className="btn btn-green" onClick={onNext} disabled={!stats.ongoing}>Next Job</button>
       </div>
     </div>
   );
