@@ -317,25 +317,23 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
 .stat-tag{font-size:8.5px;color:var(--su);text-align:center}
 
 .today-focus{
-  position:absolute;left:16px;top:16px;z-index:320;
-  width:258px;background:rgba(13,17,23,.92);
+  position:absolute;left:16px;bottom:16px;z-index:320;
+  width:230px;background:rgba(13,17,23,.92);
   border:1px solid var(--bd);border-radius:12px;
   padding:12px;backdrop-filter:blur(12px);
   box-shadow:0 18px 50px rgba(0,0,0,.28)}
-.tf-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.tf-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
 .tf-title{font-size:12px;font-weight:800;color:#e6edf3;letter-spacing:.02em}
-.tf-sub{font-size:10px;color:#58a6ff;background:rgba(56,139,253,.12);
-  border:1px solid rgba(56,139,253,.22);border-radius:999px;padding:2px 7px}
-.tf-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:10px}
+.tf-sub{font-size:10px;color:#4ade80;background:#052e16;
+  border:1px solid #166534;border-radius:999px;padding:2px 7px}
+.tf-grid{display:block;margin-bottom:12px}
 .tf-stat{background:#0f1724;border:1px solid rgba(255,255,255,.06);
-  border-radius:8px;padding:7px 8px}
-.tf-num{font-size:18px;font-weight:800;line-height:1;color:#e6edf3;
+  border-radius:8px;padding:10px 11px}
+.tf-num{font-size:28px;font-weight:800;line-height:1;color:#60a5fa;
   font-variant-numeric:tabular-nums}
-.tf-label{font-size:9px;color:var(--su);margin-top:4px;white-space:nowrap}
-.tf-stat.hot .tf-num{color:#f87171}
-.tf-stat.done .tf-num{color:#4ade80}
-.tf-actions{display:flex;gap:7px}
-.tf-actions .btn{flex:1;padding:6px 8px}
+.tf-label{font-size:10px;color:var(--su);margin-top:6px;white-space:nowrap}
+.tf-actions{display:flex;margin-top:10px}
+.tf-actions .btn{width:100%;padding:8px 10px}
 .tf-next{font-size:10.5px;color:var(--mu);margin-top:8px;overflow:hidden;
   text-overflow:ellipsis;white-space:nowrap}
 .sync-retry{padding:5px 9px}
@@ -1498,6 +1496,7 @@ function App(){
   const localHadSavedDataRef=useRef(!!_saved?.nodes);
   const lastSyncedHashRef=useRef(_saved?.workspaceHash||null);
   const pendingFocusRef=useRef(null);
+  const lastNextJobIdRef=useRef(null);
   const timeViewRef=useRef(false);
   const dragHoverDayRef=useRef(null);
 
@@ -1732,31 +1731,28 @@ function App(){
     });
     return done;
   },[allRoots,collectProjectNodes]);
-  const doneHiddenCount=useMemo(()=>Object.values(nodes).filter(n=>n.status==='done').length,[nodes]);
   const todayFocus=useMemo(()=>{
-    const today=isoToday();
-    const active=Object.values(nodes).filter(n=>n.status!=='done');
-    const todayActive=active.filter(n=>(n.deadline||'')===today||timeOffsets[n.id]===0).length;
-    const overdue=active.filter(n=>{
-      if(n.deadline)return dateToOffset(n.deadline)<0;
-      return timeOffsets[n.id]<0;
-    }).length;
-    const todayDone=Object.values(nodes).filter(n=>
-      n.status==='done'&&n.completedAt&&new Date(n.completedAt).toDateString()===new Date().toDateString()
-    ).length;
+    const ongoing=Object.values(visibleNodes).filter(n=>n.status!=='done');
     const score=n=>{
       const off=n.deadline?dateToOffset(n.deadline):(timeOffsets[n.id]??0);
       if(off<0)return [0,off,-(n.createdAt||0)];
       if(off===0)return [1,0,-(n.createdAt||0)];
       return [n.source==='continue'?3:2,0,-(n.createdAt||0)];
     };
-    const next=[...active].sort((a,b)=>{
+    const jobs=[...ongoing].sort((a,b)=>{
       const aa=score(a),bb=score(b);
       for(let i=0;i<aa.length;i++)if(aa[i]!==bb[i])return aa[i]-bb[i];
-      return 0;
-    })[0]||null;
-    return{todayActive,overdue,todayDone,hiddenDone:hideDone?doneHiddenCount:0,next};
-  },[nodes,timeOffsets,hideDone,doneHiddenCount]);
+      return String(a.id).localeCompare(String(b.id));
+    });
+    return{ongoing:ongoing.length,jobs};
+  },[visibleNodes,timeOffsets]);
+
+  const doneHiddenCount=useMemo(()=>Object.values(nodes).filter(n=>n.status==='done').length,[nodes]);
+
+  useEffect(()=>{
+    const ids=new Set(todayFocus.jobs.map(n=>n.id));
+    if(lastNextJobIdRef.current&&!ids.has(lastNextJobIdRef.current))lastNextJobIdRef.current=null;
+  },[todayFocus.jobs]);
 
   /* Helper: get effective day offset of a node (for deadline auto-assignment) */
   const getNodeOff=useCallback(nodeId=>{
@@ -2048,29 +2044,37 @@ function App(){
   },[]);
 
   /* Live marquee selection — preview while dragging, committed after release */
-  const focusNode=useCallback(id=>{
+  const focusNode=useCallback((id,{zoom=false}={})=>{
     const p=posRef.current[id];
     if(!p||!cvRef.current)return;
     const{clientWidth:w,clientHeight:h}=cvRef.current;
-    const s=scaleRef.current;
-    setPan({x:w/2-p.x*s-NW/2*s,y:h/2-p.y*s-NH/2*s});
+    const s=zoom?Math.max(1.45,scaleRef.current):scaleRef.current;
+    const nextPan={x:w/2-p.x*s-NW/2*s,y:h/2-p.y*s-NH/2*s};
+    if(zoom)setScale(s);
+    setPan(nextPan);
+    if(zoom){
+      setTimeout(()=>{
+        const latest=posRef.current[id]||p;
+        const el=cvRef.current;if(!el)return;
+        const{clientWidth:lw,clientHeight:lh}=el;
+        const finalScale=Math.max(1.45,scaleRef.current);
+        setScale(finalScale);
+        setPan({x:lw/2-latest.x*finalScale-NW/2*finalScale,y:lh/2-latest.y*finalScale-NH/2*finalScale});
+      },520);
+    }
     setSelIds(new Set([id]));
     const root=rootOfRef.current[id]||id;
     if(nodes[root])setSelRoot(root);
   },[nodes]);
 
-  const focusToday=useCallback(()=>{
-    const bounds=lposResult?.groupBounds?.[0];
-    if(!bounds||!cvRef.current)return;
-    const{clientWidth:w}=cvRef.current;
-    const s=scaleRef.current;
-    const mid=(bounds.minX+bounds.maxX)/2;
-    setPan(p=>({...p,x:w/2-mid*s}));
-  },[lposResult]);
-
   const focusNextTask=useCallback(()=>{
-    if(todayFocus.next)focusNode(todayFocus.next.id);
-    else showToast('今天没有待推进任务');
+    const jobs=todayFocus.jobs||[];
+    if(!jobs.length){showToast('没有 Ongoing 任务');return;}
+    const cur=lastNextJobIdRef.current;
+    const curIndex=jobs.findIndex(n=>n.id===cur);
+    const next=jobs[(curIndex+1)%jobs.length];
+    lastNextJobIdRef.current=next.id;
+    focusNode(next.id,{zoom:true});
   },[todayFocus,focusNode,showToast]);
 
   useEffect(()=>{
@@ -2295,7 +2299,7 @@ function App(){
             </div>
 
             {/* Stats panel */}
-            <TodayFocusPanel stats={todayFocus} onToday={focusToday} onNext={focusNextTask}/>
+            <TodayFocusPanel stats={todayFocus} onNext={focusNextTask}/>
             <StatsPanel nodes={hideDone?visibleNodes:nodes}/>
             <div className="hint">中键拖拽 · 左键框选 · Delete删除 · 滚轮缩放</div>
           </div>
@@ -2791,24 +2795,19 @@ function StatsPanel({nodes}){
   );
 }
 
-function TodayFocusPanel({stats,onToday,onNext}){
+function TodayFocusPanel({stats,onNext}){
   return(
     <div className="today-focus">
       <div className="tf-head">
         <div className="tf-title">Today Focus</div>
-        <div className="tf-sub">Today</div>
+        <div className="tf-sub">Ongoing</div>
       </div>
       <div className="tf-grid">
-        <div className="tf-stat"><div className="tf-num">{stats.todayActive}</div><div className="tf-label">今日 Active</div></div>
-        <div className="tf-stat hot"><div className="tf-num">{stats.overdue}</div><div className="tf-label">逾期</div></div>
-        <div className="tf-stat done"><div className="tf-num">{stats.todayDone}</div><div className="tf-label">今日 Done</div></div>
-        <div className="tf-stat"><div className="tf-num">{stats.hiddenDone}</div><div className="tf-label">已隐藏 Done</div></div>
+        <div className="tf-stat"><div className="tf-num">{stats.ongoing}</div><div className="tf-label">Ongoing projects</div></div>
       </div>
       <div className="tf-actions">
-        <button className="btn btn-ghost" onClick={onToday}>定位 Today</button>
-        <button className="btn btn-green" onClick={onNext}>下一个任务</button>
+        <button className="btn btn-green" onClick={onNext} disabled={!stats.ongoing}>Next Job</button>
       </div>
-      <div className="tf-next">{stats.next?`Next: ${stats.next.title}`:'Next: 暂无待推进任务'}</div>
     </div>
   );
 }
