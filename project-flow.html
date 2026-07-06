@@ -1483,6 +1483,7 @@ function App(){
   const localHadSavedDataRef=useRef(!!_saved?.nodes);
   const lastSyncedHashRef=useRef(_saved?.workspaceHash||null);
   const pendingFocusRef=useRef(null);
+  const pendingProjectJumpRef=useRef(null);
   const lastNextJobIdRef=useRef(null);
   const timeViewRef=useRef(false);
   const dragHoverDayRef=useRef(null);
@@ -1690,7 +1691,6 @@ function App(){
      Tree view keeps the older freeform node positions. */
   const getPos=useCallback(id=>lpos[id],[lpos]);
 
-  const roots=useMemo(()=>Object.values(visibleNodes).filter(n=>!n.parentId||!visibleNodes[n.parentId]),[visibleNodes]);
   const allRoots=useMemo(()=>Object.values(nodes).filter(n=>!n.parentId),[nodes]);
   const childrenByParent=useMemo(()=>{
     const map={};
@@ -2022,13 +2022,38 @@ function App(){
 
   /* Jump to project */
   const jumpTo=useCallback(rid=>{
-    const p=manPosRef.current[rid]||posRef.current[rid];
-    if(!p||!cvRef.current)return;
-    const{clientWidth:w,clientHeight:h}=cvRef.current;
-    const s=scaleRef.current;
-    setPan({x:w/2-p.x*s-NW/2*s,y:h/2-p.y*s-NH/2*s});
+    const projectNodes=collectProjectNodes(rid);
+    const target=projectNodes.find(n=>posRef.current[n.id])||nodes[rid]||projectNodes[0];
+    const p=target?(manPosRef.current[target.id]||posRef.current[target.id]):null;
     setSelRoot(rid);
-  },[]);
+    if(!p||!cvRef.current){
+      if(hideDone){
+        pendingProjectJumpRef.current=rid;
+        setHideDone(false);
+      }
+      return;
+    }
+    const{clientWidth:w,clientHeight:h}=cvRef.current;
+    const s=Math.max(1.55,scaleRef.current);
+    setScale(s);
+    setPan({x:w/2-p.x*s-NW/2*s,y:h/2-p.y*s-NH/2*s});
+    if(target?.id)setSelIds(new Set([target.id]));
+    setTimeout(()=>{
+      const latest=target?.id?(posRef.current[target.id]||p):p;
+      const el=cvRef.current;if(!latest||!el)return;
+      const{clientWidth:lw,clientHeight:lh}=el;
+      const finalScale=Math.max(1.55,scaleRef.current);
+      setScale(finalScale);
+      setPan({x:lw/2-latest.x*finalScale-NW/2*finalScale,y:lh/2-latest.y*finalScale-NH/2*finalScale});
+    },520);
+  },[collectProjectNodes,nodes,hideDone]);
+
+  useEffect(()=>{
+    if(hideDone||!pendingProjectJumpRef.current)return;
+    const rid=pendingProjectJumpRef.current;
+    pendingProjectJumpRef.current=null;
+    requestAnimationFrame(()=>jumpTo(rid));
+  },[hideDone,lpos,jumpTo]);
 
   /* Live marquee selection — preview while dragging, committed after release */
   const focusNode=useCallback((id,{zoom=false}={})=>{
@@ -2180,7 +2205,7 @@ function App(){
 
       {/* ── Main ── */}
       <div className="layout" style={{flex:1,overflow:'hidden'}}>
-        <Sidebar roots={roots} nodes={nodes} selRoot={selRoot} onSelect={jumpTo} onAdd={addRoot} projectDoneSet={projectDoneSet}/>
+        <Sidebar roots={allRoots} nodes={nodes} selRoot={selRoot} onSelect={jumpTo} onAdd={addRoot} projectDoneSet={projectDoneSet}/>
 
         <div className="cv-area">
           {/* Time ruler */}
