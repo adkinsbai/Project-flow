@@ -12,19 +12,22 @@ Project Flow is a visual workflow planner with account-based access, a 30-day fr
 
 GitHub Pages can host the frontend, but it cannot run the account backend. Supabase Edge Functions hold the private keys and call Creem securely.
 
-## Creem Setup
+## Creem Live Setup
 
-1. Create a Creem account at `https://creem.io/dashboard`.
-2. Start in test mode and create/get a `creem_test_...` API key.
+1. Open the Creem dashboard at `https://creem.io/dashboard`.
+2. Create or confirm a live API key from Dashboard > API Keys. Live keys start with `creem_`.
+   - For sandbox testing only, use a `creem_test_...` key and set `CREEM_TEST_MODE=true`.
 3. Create a one-time product for Project Flow lifetime access:
    - Name: `Project Flow Lifetime`
-   - Price: `9.9`
+   - Price: `US$12`
    - Billing type: one-time
+   - Tax category: SaaS
    - Enable License Key Management on the product.
 4. Save the product ID as `CREEM_LIFETIME_PRODUCT_ID`.
 5. Add a webhook endpoint in Creem:
    - URL: `https://YOUR_PROJECT.supabase.co/functions/v1/creem-webhook`
-   - Events: `checkout.completed`, subscription grant/revoke events if enabled.
+   - Events: `checkout.completed`, `refund.created`, `dispute.created`
+   - If subscription products are added later, also enable `subscription.active`, `subscription.trialing`, `subscription.paid`, `subscription.expired`, and `subscription.paused`.
 6. Copy the webhook secret as `CREEM_WEBHOOK_SECRET`.
 
 Creem will handle payment and license key delivery. The app also lets a user paste their Creem license key to unlock lifetime access.
@@ -58,11 +61,11 @@ supabase functions deploy creem-webhook
 ```bash
 supabase secrets set SUPABASE_URL=https://YOUR_PROJECT.supabase.co
 supabase secrets set SUPABASE_SERVICE_ROLE_KEY=YOUR_SERVICE_ROLE_KEY
-supabase secrets set APP_URL=https://adkinsbai.github.io/Project-flow/
-supabase secrets set CREEM_API_KEY=creem_test_YOUR_KEY
+supabase secrets set APP_URL=https://project-flow-delta.vercel.app/
+supabase secrets set CREEM_API_KEY=creem_YOUR_LIVE_KEY
 supabase secrets set CREEM_WEBHOOK_SECRET=YOUR_WEBHOOK_SECRET
 supabase secrets set CREEM_LIFETIME_PRODUCT_ID=prod_YOUR_PRODUCT_ID
-supabase secrets set CREEM_TEST_MODE=true
+supabase secrets set CREEM_TEST_MODE=false
 ```
 
 5. Create `config.js` from the example:
@@ -86,6 +89,8 @@ window.PROJECT_FLOW_SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
 - Lifetime access is granted when:
   - Creem sends a verified `checkout.completed` webhook with the user's `referenceId`, or
   - the user redeems a valid Creem license key inside the app.
+- Lifetime access is revoked when Creem sends a verified `refund.created` or `dispute.created` webhook with the user's `referenceId`.
+- Order support fields such as `creem_checkout_id`, `creem_order_id`, `creem_product_id`, and the latest Creem event are stored on the profile for support lookup.
 - The first-login guide state is stored as `profiles.has_seen_guide`.
 
 ## Local Preview

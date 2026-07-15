@@ -76,7 +76,12 @@ Write-Host ""
 Write-Host "Deploying Edge Functions..."
 $functions = @("me", "workspace", "creem-checkout", "creem-license", "creem-webhook")
 foreach ($functionName in $functions) {
-  Invoke-Supabase functions deploy $functionName --project-ref $ProjectRef
+  if ($functionName -eq "creem-webhook") {
+    Invoke-Supabase functions deploy $functionName --project-ref $ProjectRef --no-verify-jwt
+  }
+  else {
+    Invoke-Supabase functions deploy $functionName --project-ref $ProjectRef
+  }
 }
 
 if (-not $SkipSecrets) {
@@ -86,10 +91,11 @@ if (-not $SkipSecrets) {
   $creemApiKey = Read-SecretPlain "Creem API key"
   $creemWebhookSecret = Read-SecretPlain "Creem webhook secret"
   $creemProductId = Read-SecretPlain "Creem lifetime product id"
-  $creemTestMode = Read-Host "Creem test mode? true/false"
-  if ($creemTestMode -notin @("true", "false")) {
-    throw "Creem test mode must be true or false."
+  $creemEnvironment = Read-Host "Creem environment? live/test"
+  if ($creemEnvironment -notin @("live", "test")) {
+    throw "Creem environment must be live or test."
   }
+  $creemTestMode = if ($creemEnvironment -eq "test") { "true" } else { "false" }
 
   $secretFile = Join-Path $env:TEMP ("project-flow-supabase-secrets-" + [guid]::NewGuid().ToString("N") + ".env")
   try {

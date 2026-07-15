@@ -23,13 +23,47 @@ function safeEqual(a: string, b: string) {
 function findReferenceId(object: Record<string, unknown>) {
   const checkout = (object.checkout || {}) as Record<string, unknown>;
   const order = (object.order || {}) as Record<string, unknown>;
-  const metadata = (object.metadata || checkout.metadata || order.metadata || {}) as Record<string, unknown>;
+  const subscription = (object.subscription || {}) as Record<string, unknown>;
+  const transaction = (object.transaction || {}) as Record<string, unknown>;
+  const metadata = (
+    object.metadata || checkout.metadata || order.metadata || subscription.metadata || transaction.metadata || {}
+  ) as Record<string, unknown>;
   return String(metadata.referenceId || metadata.reference_id || metadata.userId || "");
 }
 
 function findCustomerId(object: Record<string, unknown>) {
   const customer = object.customer as Record<string, unknown> | undefined;
-  return String(object.customer_id || customer?.id || "");
+  const checkout = (object.checkout || {}) as Record<string, unknown>;
+  const order = (object.order || {}) as Record<string, unknown>;
+  return String(object.customer_id || object.customerId || customer?.id || checkout.customer_id || order.customer_id || "");
+}
+
+function findObjectId(object: Record<string, unknown>, key: "checkout" | "order" | "product") {
+  const nested = (object[key] || {}) as Record<string, unknown>;
+  const snake = `${key}_id`;
+  const camel = `${key}Id`;
+  return String(object[snake] || object[camel] || nested.id || "");
+}
+
+async function updateProfileWithFallback(
+  supabase: ReturnType<typeof adminClient>,
+  referenceId: string,
+  fullUpdate: Record<string, unknown>,
+  fallbackUpdate: Record<string, unknown>,
+  preserveManualLicense = false,
+) {
+  let query = supabase.from("profiles").update(fullUpdate).eq("id", referenceId);
+  if (preserveManualLicense) query = query.is("creem_license_key_hash", null);
+  const { error } = await query;
+  if (!error) return null;
+
+  const missingColumn = /column .* does not exist|Could not find .* column/i.test(error.message);
+  if (!missingColumn) return error;
+
+  let fallbackQuery = supabase.from("profiles").update(fallbackUpdate).eq("id", referenceId);
+  if (preserveManualLicense) fallbackQuery = fallbackQuery.is("creem_license_key_hash", null);
+  const { error: fallbackError } = await fallbackQuery;
+  return fallbackError;
 }
 
 Deno.serve(async (req) => {
@@ -66,30 +100,68 @@ Deno.serve(async (req) => {
   }
 
   const grantEvents = new Set(["checkout.completed", "subscription.active", "subscription.trialing", "subscription.paid"]);
-  const revokeEvents = new Set(["subscription.expired", "subscription.paused"]);
+  const softRevokeEvents = new Set(["subscription.expired", "subscription.paused"]);
+  const hardRevokeEvents = new Set(["refund.created", "dispute.created"]);
   const referenceId = findReferenceId(object);
 
   if (referenceId && grantEvents.has(eventType)) {
-    const { error } = await supabase
-      .from("profiles")
-      .update({
+    const error = await updateProfileWithFallback(
+      supabase,
+      referenceId,
+      {
         plan: "lifetime",
         lifetime_unlocked_at: new Date().toISOString(),
         creem_customer_id: findCustomerId(object) || null,
-      })
-      .eq("id", referenceId);
+        creem_checkout_id: findObjectId(object, "checkout") || null,
+        creem_order_id: findObjectId(object, "order") || null,
+        creem_product_id: findObjectId(object, "product") || null,
+        creem_last_event_id: eventId,
+        creem_last_event_type: eventType,
+      },
+      {
+        plan: "lifetime",
+        lifetime_unlocked_at: new Date().toISOString(),
+        creem_customer_id: findCustomerId(object) || null,
+      },
+    );
     if (error) return json({ error: error.message }, { status: 400 });
   }
 
-  if (referenceId && revokeEvents.has(eventType)) {
-    const { error } = await supabase
-      .from("profiles")
-      .update({
+  if (referenceId && softRevokeEvents.has(eventType)) {
+    const error = await updateProfileWithFallback(
+      supabase,
+      referenceId,
+      {
         plan: "trial",
         lifetime_unlocked_at: null,
-      })
-      .eq("id", referenceId)
-      .is("creem_license_key_hash", null);
+        creem_last_event_id: eventId,
+        creem_last_event_type: eventType,
+      },
+      {
+        plan: "trial",
+        lifetime_unlocked_at: null,
+      },
+      true,
+    );
+    if (error) return json({ error: error.message }, { status: 400 });
+  }
+
+  if (referenceId && hardRevokeEvents.has(eventType)) {
+    const error = await updateProfileWithFallback(
+      supabase,
+      referenceId,
+      {
+        plan: "trial",
+        lifetime_unlocked_at: null,
+        creem_last_event_id: eventId,
+        creem_last_event_type: eventType,
+      },
+      {
+        plan: "trial",
+        lifetime_unlocked_at: null,
+      },
+      true,
+    );
     if (error) return json({ error: error.message }, { status: 400 });
   }
 
