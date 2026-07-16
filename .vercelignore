@@ -9,3 +9,8 @@ scripts/
 .codex/
 website-deploy.zip
 website/downloads/*.exe
+output/
+tmp/
+docs/
+.env
+.env.*
