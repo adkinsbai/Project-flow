@@ -6,6 +6,7 @@
   "scripts": {
     "desktop": "electron .",
     "verify:creem": "node scripts/verify-creem-integration.mjs",
+    "verify:merge": "node scripts/workspace-merge.test.mjs",
     "verify:ui-sync": "node scripts/verify-ui-sync-copy.mjs",
     "pack:win": "electron-builder --win portable",
     "dist:win": "electron-builder --win nsis,portable"

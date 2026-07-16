@@ -8,6 +8,7 @@
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 <script src="./config.js"></script>
+<script src="./workspace-merge.js"></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -428,8 +429,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
 .summary-item{background:var(--bg);border:1px solid var(--bd);border-radius:10px;padding:10px}
 .summary-k{font-size:10px;color:var(--mu);margin-bottom:4px}
 .summary-v{font-size:17px;font-weight:800;color:var(--tx)}
-.conflict-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:18px;flex-wrap:wrap}
-.conflict-note{font-size:11px;color:var(--mu);line-height:1.6;margin-top:8px}
 
 /* ── AI bar ── */
 .ai-bar{
@@ -1467,7 +1466,6 @@ function App(){
   const [hideDone,setHideDone]=useState(!!_saved?.hideDone);
   const [lastCloudSavedAt,setLastCloudSavedAt]=useState(_saved?.lastCloudSavedAt||null);
   const [cloudError,setCloudError]=useState('');
-  const [conflict,setConflict]=useState(null);
   const [toast,setToast]=useState('');
   const [summaryRoot,setSummaryRoot]=useState(null);
   const [theme,setTheme]=useState(getInitialTheme);
@@ -1635,7 +1633,7 @@ function App(){
       deleteConfirm.ids.forEach(id=>{
         if(!upd[id])return;
         const par=upd[id].parentId;
-        Object.values(upd).forEach(c=>{if(c.parentId===id)upd[c.id]={...upd[c.id],parentId:par??null};});
+        Object.values(upd).forEach(c=>{if(c.parentId===id)upd[c.id]={...upd[c.id],parentId:par??null,updatedAt:now()};});
         delete upd[id];
       });
       return upd;
@@ -1692,6 +1690,7 @@ function App(){
   const lastCloudSavedAtRef=useRef(lastCloudSavedAt);
   const localHadSavedDataRef=useRef(!!_saved?.nodes);
   const lastSyncedHashRef=useRef(_saved?.workspaceHash||null);
+  const pendingMergeToastRef=useRef(null);
   const pendingFocusRef=useRef(null);
   const pendingProjectJumpRef=useRef(null);
   const lastNextJobIdRef=useRef(null);
@@ -1754,7 +1753,10 @@ function App(){
       lastSyncedHashRef.current=contentHash;
       setLastCloudSavedAt(savedAt);
       setCloudStatus('ok');
-      if(manual)showToast('已同步到云端');
+      if(pendingMergeToastRef.current){
+        showToast(pendingMergeToastRef.current);
+        pendingMergeToastRef.current=null;
+      }else if(manual)showToast('已同步到云端');
     }catch(e){
       setCloudError(cloudErrorLabel(e));
       setCloudStatus('error');
@@ -1793,9 +1795,13 @@ function App(){
       const cloudHash=ws?.workspaceHash||workspaceHash(ws);
       const localHash=workspaceHash(currentWorkspace({lastCloudSavedAt:null,clientUpdatedAt:null}));
       if(cloudHas&&localHas&&cloudHash!==localHash){
-        syncPausedRef.current=true;
-        setConflict({cloudData:ws,localData:local,updatedAt:data.workspace?.updated_at});
+        const merged=window.mergeWorkspaceData(local,ws);
+        applyWorkspaceData(merged.data);
+        lastSyncedHashRef.current=cloudHash;
+        cloudLoadedRef.current=true;
+        syncPausedRef.current=false;
         setCloudStatus('pending');
+        pendingMergeToastRef.current=merged.message;
         return;
       }
       if(cloudHas){
@@ -1972,7 +1978,8 @@ function App(){
     const col=COLORS[Math.floor(Math.random()*COLORS.length)].key;
     // In time view, new root defaults to today
     const deadline=timeViewRef.current?isoToday():undefined;
-    setNodes(p=>({...p,[id]:{id,title:'New Project',parentId:null,status:'active',createdAt:now(),color:col,deadline}}));
+    const createdAt=now();
+    setNodes(p=>({...p,[id]:{id,title:'New Project',parentId:null,status:'active',createdAt,updatedAt:createdAt,color:col,deadline}}));
     setSelRoot(id);
   };
 
@@ -2002,7 +2009,8 @@ function App(){
       }
     }
     pendingFocusRef.current=id;
-    setNodes(p=>({...p,[id]:{id,title:inp.value.trim(),parentId:inp.parentId,status:'active',createdAt:now(),deadline,source:inp.label.includes('Continue')?'continue':'branch'}}));
+    const createdAt=now();
+    setNodes(p=>({...p,[id]:{id,title:inp.value.trim(),parentId:inp.parentId,status:'active',createdAt,updatedAt:createdAt,deadline,source:inp.label.includes('Continue')?'continue':'branch'}}));
     closeInput(tid);
   };
 
@@ -2035,7 +2043,8 @@ function App(){
       const upd={...prev};
       let cur=nodeId;
       while(cur&&cur!==forkId){
-        upd[cur]={...upd[cur],status:'done',completedAt:now()};
+        const completedAt=now();
+        upd[cur]={...upd[cur],status:'done',completedAt,updatedAt:completedAt};
         cur=prev[cur]?.parentId??null;
       }
       const propagate=id=>{
@@ -2044,7 +2053,8 @@ function App(){
         if(!n?.parentId)return;
         const sibs=Object.values(upd).filter(x=>x.parentId===n.parentId);
         if(sibs.length&&sibs.every(s=>s.status==='done')){
-          upd[n.parentId]={...upd[n.parentId],status:'done',completedAt:now()};
+          const completedAt=now();
+          upd[n.parentId]={...upd[n.parentId],status:'done',completedAt,updatedAt:completedAt};
           propagate(n.parentId);
         }
       };
@@ -2053,9 +2063,9 @@ function App(){
     });
   };
 
-  const onEdit=(id,t)=>setNodes(p=>({...p,[id]:{...p[id],title:t}}));
-  const onSetColor=(id,col)=>setNodes(p=>({...p,[id]:{...p[id],color:col}}));
-  const onSetDeadline=(id,dl)=>setNodes(p=>({...p,[id]:{...p[id],deadline:dl}}));
+  const onEdit=(id,t)=>setNodes(p=>({...p,[id]:{...p[id],title:t,updatedAt:now()}}));
+  const onSetColor=(id,col)=>setNodes(p=>({...p,[id]:{...p[id],color:col,updatedAt:now()}}));
+  const onSetDeadline=(id,dl)=>setNodes(p=>({...p,[id]:{...p[id],deadline:dl,updatedAt:now()}}));
 
   const autoArrange=()=>{
     setArranging(true);
@@ -2071,7 +2081,7 @@ function App(){
       const node=prev[id];
       const children=Object.values(prev).filter(n=>n.parentId===id);
       const upd={...prev};delete upd[id];
-      children.forEach(c=>{upd[c.id]={...upd[c.id],parentId:node?.parentId??null};});
+      children.forEach(c=>{upd[c.id]={...upd[c.id],parentId:node?.parentId??null,updatedAt:now()};});
       return upd;
     });
     setManPos(p=>{const n={...p};delete n[id];return n;});
@@ -2087,8 +2097,9 @@ function App(){
     setNodes(prev=>{
       const upd={...prev};
       specs.forEach(s=>{
+        const createdAt=now();
         upd[s.id]={id:s.id,title:s.title,parentId:s.parentId,
-          status:'active',createdAt:now(),color:DFL,deadline:s.deadline};
+          status:'active',createdAt,updatedAt:createdAt,color:DFL,deadline:s.deadline};
       });
       return upd;
     });
@@ -2588,32 +2599,6 @@ function App(){
           onGist={()=>{setShowGhModal(true);setDesktopPanel(null);}}/>
       )}
 
-      {conflict&&(
-        <ConflictModal
-          updatedAt={conflict.updatedAt}
-          onUseCloud={()=>{
-            applyWorkspaceData(conflict.cloudData);
-            syncPausedRef.current=false;
-            cloudLoadedRef.current=true;
-            lastSyncedHashRef.current=conflict.cloudData?.workspaceHash||workspaceHash(conflict.cloudData);
-            setConflict(null);
-            setCloudStatus('ok');
-            showToast('已使用云端数据');
-          }}
-          onUploadLocal={()=>{
-            setConflict(null);
-            syncPausedRef.current=false;
-            cloudLoadedRef.current=true;
-            saveWorkspaceToCloud({manual:true});
-          }}
-          onLater={()=>{
-            setConflict(null);
-            syncPausedRef.current=true;
-            cloudLoadedRef.current=false;
-            setCloudStatus('pending');
-            showToast('已暂停云同步，可稍后重试');
-          }}/>
-      )}
       {completionSummary&&(
         <CompletionSummaryModal summary={completionSummary} onClose={()=>setSummaryRoot(null)}/>
       )}
@@ -3045,24 +3030,6 @@ function StatsPanel({nodes,onNextJob,nextJobCount=0}){
         <div className="stat-value">{doneCount}</div>
         <div className="stat-label">Done</div>
         <div className="stat-tag">✓ 已完成</div>
-      </div>
-    </div>
-  );
-}
-
-function ConflictModal({updatedAt,onUseCloud,onUploadLocal,onLater}){
-  const t=updatedAt?new Date(updatedAt).toLocaleString('zh-CN'):'未知时间';
-  return(
-    <div className="del-confirm-overlay" onClick={onLater}>
-      <div className="mp" onClick={e=>e.stopPropagation()}>
-        <h2>发现本地和云端数据不同</h2>
-        <p>你的本地工作区和云端工作区都有内容，系统不会自动覆盖。推荐先使用云端版本；如果本机才是最新版本，可以上传本地。</p>
-        <div className="conflict-note">云端更新时间：{t}</div>
-        <div className="conflict-actions">
-          <button className="btn btn-green" onClick={onUseCloud}>使用云端</button>
-          <button className="btn btn-ghost" onClick={onUploadLocal}>上传本地</button>
-          <button className="btn btn-ghost" onClick={onLater}>稍后处理</button>
-        </div>
       </div>
     </div>
   );
